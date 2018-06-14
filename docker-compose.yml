@@ -20,6 +20,7 @@ services:
       - ./fakes3:/fakes3_root
   outline:
     image: outline:v001
+    restart: always
     command: yarn start
     build:
       context: .
@@ -31,9 +32,9 @@ services:
     volumes:
       - .:/opt/outline
     depends_on:
-      - postgres
+#      - postgres
       - redis
-      - s3
+#      - s3
     environment:
       NODE_PATH: "/opt/outline/node_modules:/opt/node_modules"
       PATH: "/opt/outline/node_modules/.bin:/opt/node_modules/.bin:$PATH"
