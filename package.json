@@ -7,7 +7,7 @@
     "build:webpack": "NODE_ENV=production webpack --config webpack.config.prod.js",
     "build:analyze": "NODE_ENV=production webpack --config webpack.config.prod.js --json > stats.json",
     "build": "npm run clean && npm run build:webpack",
-    "start": "NODE_ENV=production node index.js",
+    "start": "npm run build && NODE_ENV=production node index.js",
     "dev": "NODE_ENV=development nodemon --watch server index.js",
     "lint": "npm run lint:flow && npm run lint:js",
     "lint:js": "eslint app server",
