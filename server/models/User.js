@@ -1,6 +1,6 @@
 // @flow
 import crypto from 'crypto';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcrypt-nodejs';
 import uuid from 'uuid';
 import JWT from 'jsonwebtoken';
 import subMinutes from 'date-fns/sub_minutes';

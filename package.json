@@ -82,7 +82,7 @@
     "babel-preset-react": "6.11.1",
     "babel-preset-react-hmre": "1.1.1",
     "babel-regenerator-runtime": "6.5.0",
-    "bcrypt": "1.0.3",
+    "bcrypt-nodejs": "0.0.3",
     "boundless-arrow-key-navigation": "^1.0.4",
     "boundless-popover": "^1.0.4",
     "bugsnag": "^1.7.0",
