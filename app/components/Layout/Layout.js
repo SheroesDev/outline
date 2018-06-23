@@ -38,7 +38,7 @@ type Props = {
 class Layout extends React.Component<Props> {
   scrollable: ?HTMLDivElement;
 
-  @keydown(['/', 't'])
+  @keydown(['/', 't', 'meta+k'])
   goToSearch(ev) {
     ev.preventDefault();
     ev.stopPropagation();
@@ -125,7 +125,7 @@ const Container = styled(Flex)`
 
 const Content = styled(Flex)`
   margin: 0;
-  transition: margin-left 200ms ease-in-out;
+  transition: margin-left 100ms ease-out;
 
   @media print {
     margin: 0;
