@@ -27,7 +27,7 @@ class Dashboard extends React.Component<Props> {
 
   loadContent = async () => {
     await Promise.all([
-      this.props.documents.fetchRecentlyModified({ limit: 5 }),
+      this.props.documents.fetchRecentlyModified({ limit: 20 }),
       this.props.documents.fetchRecentlyViewed({ limit: 5 }),
     ]);
     this.isLoaded = true;
