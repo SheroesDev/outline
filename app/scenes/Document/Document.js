@@ -18,6 +18,7 @@ import {
   matchDocumentMove,
 } from 'utils/routeHelpers';
 import { uploadFile } from 'utils/uploadFile';
+import { emojiToUrl } from 'utils/emoji';
 import isInternalUrl from 'utils/isInternalUrl';
 
 import Document from 'models/Document';
@@ -140,7 +141,7 @@ class DocumentScene extends React.Component<Props> {
   };
 
   loadEditor = async () => {
-    const EditorImport = await import('rich-markdown-editor');
+    const EditorImport = await import('./components/Editor');
     this.editorComponent = EditorImport.default;
   };
 
@@ -252,8 +253,6 @@ class DocumentScene extends React.Component<Props> {
     const Editor = this.editorComponent;
     const isMoving = match.path === matchDocumentMove;
     const document = this.document;
-    const titleFromState = location.state ? location.state.title : '';
-    const titleText = document ? document.title : titleFromState;
     const isShare = match.params.shareId;
 
     if (this.notFound) {
@@ -268,60 +267,68 @@ class DocumentScene extends React.Component<Props> {
       );
     }
 
-    return (
-      <Container key={document ? document.id : undefined} column auto>
-        {isMoving && document && <DocumentMove document={document} />}
-        {titleText && <PageTitle title={titleText} />}
-        {(this.isUploading || this.isSaving) && <LoadingIndicator />}
-        {!document || !Editor ? (
+    if (!document || !Editor) {
+      return (
+        <Container column auto>
+          <PageTitle title={location.state ? location.state.title : ''} />
           <CenteredContent>
             <LoadingState />
           </CenteredContent>
-        ) : (
-          <Container justify="center" column auto>
-            {this.isEditing && (
-              <React.Fragment>
-                <Prompt
-                  when={document.hasPendingChanges}
-                  message={DISCARD_CHANGES}
-                />
-                <Prompt when={this.isUploading} message={UPLOADING_WARNING} />
-              </React.Fragment>
-            )}
-            {document &&
-              !isShare && (
-                <Header
-                  document={document}
-                  isDraft={!document.publishedAt}
-                  isEditing={this.isEditing}
-                  isSaving={this.isSaving}
-                  isPublishing={this.isPublishing}
-                  savingIsDisabled={!document.allowSave}
-                  history={this.props.history}
-                  onDiscard={this.onDiscard}
-                  onSave={this.onSave}
-                />
-              )}
-            <MaxWidth column auto>
-              <Editor
-                titlePlaceholder="Start with a title…"
-                bodyPlaceholder="…the rest is your canvas"
-                defaultValue={document.text}
-                pretitle={document.emoji}
-                uploadImage={this.onUploadImage}
-                onImageUploadStart={this.onImageUploadStart}
-                onImageUploadStop={this.onImageUploadStop}
-                onSearchLink={this.onSearchLink}
-                onClickLink={this.onClickLink}
-                onChange={this.onChange}
-                onSave={this.onSave}
-                onCancel={this.onDiscard}
-                readOnly={!this.isEditing}
-                toc
+        </Container>
+      );
+    }
+
+    return (
+      <Container key={document.id} column auto>
+        {isMoving && <DocumentMove document={document} />}
+        <PageTitle
+          title={document.title.replace(document.emoji, '')}
+          favicon={document.emoji ? emojiToUrl(document.emoji) : undefined}
+        />
+        {(this.isUploading || this.isSaving) && <LoadingIndicator />}
+
+        <Container justify="center" column auto>
+          {this.isEditing && (
+            <React.Fragment>
+              <Prompt
+                when={document.hasPendingChanges}
+                message={DISCARD_CHANGES}
               />
-            </MaxWidth>
-          </Container>
-        )}
+              <Prompt when={this.isUploading} message={UPLOADING_WARNING} />
+            </React.Fragment>
+          )}
+          {!isShare && (
+            <Header
+              document={document}
+              isDraft={!document.publishedAt}
+              isEditing={this.isEditing}
+              isSaving={this.isSaving}
+              isPublishing={this.isPublishing}
+              savingIsDisabled={!document.allowSave}
+              history={this.props.history}
+              onDiscard={this.onDiscard}
+              onSave={this.onSave}
+            />
+          )}
+          <MaxWidth column auto>
+            <Editor
+              titlePlaceholder="Start with a title…"
+              bodyPlaceholder="…the rest is your canvas"
+              defaultValue={document.text}
+              pretitle={document.emoji}
+              uploadImage={this.onUploadImage}
+              onImageUploadStart={this.onImageUploadStart}
+              onImageUploadStop={this.onImageUploadStop}
+              onSearchLink={this.onSearchLink}
+              onClickLink={this.onClickLink}
+              onChange={this.onChange}
+              onSave={this.onSave}
+              onCancel={this.onDiscard}
+              readOnly={!this.isEditing}
+              toc
+            />
+          </MaxWidth>
+        </Container>
       </Container>
     );
   }

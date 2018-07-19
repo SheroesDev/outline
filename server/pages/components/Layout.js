@@ -1,6 +1,8 @@
 // @flow
 import * as React from 'react';
 import { Helmet } from 'react-helmet';
+import styled from 'styled-components';
+import breakpoint from 'styled-components-breakpoint';
 import { TopNavigation, BottomNavigation } from './Navigation';
 import Analytics from '../../../shared/components/Analytics';
 import globalStyles from '../../../shared/styles/globals';
@@ -15,7 +17,7 @@ type Props = {
   children?: React.Node,
 };
 
-export default function Layout({ children }: Props) {
+function Layout({ children }: Props) {
   globalStyles();
 
   return (
@@ -63,11 +65,21 @@ export default function Layout({ children }: Props) {
         {'{{HEAD}}'}
         {'{{CSS}}'}
       </head>
-      <body>
+      <Body>
         <TopNavigation />
         {children}
         <BottomNavigation />
-      </body>
+      </Body>
     </html>
   );
 }
+
+const Body = styled.body`
+  padding: 0 30px;
+
+  ${breakpoint('tablet')`
+    padding: 0;
+  `};
+`;
+
+export default Layout;
