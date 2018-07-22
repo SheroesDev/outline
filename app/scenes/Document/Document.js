@@ -110,9 +110,10 @@ class DocumentScene extends React.Component<Props> {
         text: '',
       });
     } else {
+      const { shareId } = props.match.params;
       this.document = await this.props.documents.fetch(
         props.match.params.documentSlug,
-        { shareId: props.match.params.shareId }
+        { shareId }
       );
 
       const document = this.document;
@@ -123,7 +124,7 @@ class DocumentScene extends React.Component<Props> {
         // Cache data if user enters edit mode and cancels
         this.editCache = document.text;
 
-        if (this.props.auth.user) {
+        if (this.props.auth.user && !shareId) {
           if (!this.isEditing && document.publishedAt) {
             this.viewTimeout = setTimeout(document.view, MARK_AS_VIEWED_AFTER);
           }
@@ -279,7 +280,7 @@ class DocumentScene extends React.Component<Props> {
     }
 
     return (
-      <Container key={document.id} column auto>
+      <Container key={document.id} isShare={isShare} column auto>
         {isMoving && <DocumentMove document={document} />}
         <PageTitle
           title={document.title.replace(document.emoji, '')}
@@ -349,6 +350,7 @@ const MaxWidth = styled(Flex)`
 
 const Container = styled(Flex)`
   position: relative;
+  margin-top: ${props => (props.isShare ? '50px' : '0')};
 `;
 
 const LoadingState = styled(LoadingPlaceholder)`
