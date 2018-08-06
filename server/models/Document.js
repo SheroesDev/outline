@@ -1,16 +1,18 @@
 // @flow
 import slug from 'slug';
-import _ from 'lodash';
+import { map, find, compact, uniq } from 'lodash';
 import randomstring from 'randomstring';
 import MarkdownSerializer from 'slate-md-serializer';
 import Plain from 'slate-plain-serializer';
 import Sequelize from 'sequelize';
+import removeMarkdown from '@tommoor/remove-markdown';
 
 import isUUID from 'validator/lib/isUUID';
-import { Collection } from '../models';
+import { Collection, User } from '../models';
 import { DataTypes, sequelize } from '../sequelize';
 import events from '../events';
 import parseTitle from '../../shared/utils/parseTitle';
+import unescape from '../../shared/utils/unescape';
 import Revision from './Revision';
 
 const Op = Sequelize.Op;
@@ -65,7 +67,7 @@ const beforeSave = async doc => {
 
   // add the current user as revision hasn't been generated yet
   ids.push(doc.lastModifiedById);
-  doc.collaboratorIds = _.uniq(ids);
+  doc.collaboratorIds = uniq(ids);
 
   // increment revision
   doc.revisionCount += 1;
@@ -188,44 +190,65 @@ Document.findById = async id => {
   }
 };
 
+type SearchResult = {
+  ranking: number,
+  context: string,
+  document: Document,
+};
+
 Document.searchForUser = async (
   user,
   query,
   options = {}
-): Promise<Document[]> => {
+): Promise<SearchResult[]> => {
   const limit = options.limit || 15;
   const offset = options.offset || 0;
 
   const sql = `
-        SELECT *, ts_rank(documents."searchVector", plainto_tsquery('english', :query)) as "searchRanking" FROM documents
-        WHERE "searchVector" @@ plainto_tsquery('english', :query) AND
-          "teamId" = '${user.teamId}'::uuid AND
-          "deletedAt" IS NULL
-        ORDER BY "searchRanking" DESC
-        LIMIT :limit OFFSET :offset;
-        `;
+    SELECT
+      id,
+      ts_rank(documents."searchVector", plainto_tsquery('english', :query)) as "searchRanking",
+      ts_headline('english', "text", plainto_tsquery('english', :query), 'MaxFragments=1, MinWords=20, MaxWords=30') as "searchContext"
+    FROM documents
+    WHERE "searchVector" @@ plainto_tsquery('english', :query) AND
+      "teamId" = '${user.teamId}'::uuid AND
+      "deletedAt" IS NULL AND
+      ("publishedAt" IS NOT NULL OR "createdById" = '${user.id}')
+    ORDER BY 
+      "searchRanking" DESC,
+      "updatedAt" DESC
+    LIMIT :limit
+    OFFSET :offset;
+  `;
 
   const results = await sequelize.query(sql, {
+    type: sequelize.QueryTypes.SELECT,
     replacements: {
       query,
       limit,
       offset,
     },
-    model: Document,
-  });
-  const ids = results.map(document => document.id);
-
-  // Second query to get views for the data
-  const withViewsScope = { method: ['withViews', user.id] };
-  const documents = await Document.scope(
-    'defaultScope',
-    withViewsScope
-  ).findAll({
-    where: { id: ids },
   });
 
-  // Order the documents in the same order as the first query
-  return _.sortBy(documents, doc => ids.indexOf(doc.id));
+  // Second query to get associated document data
+  const documents = await Document.scope({
+    method: ['withViews', user.id],
+  }).findAll({
+    where: { id: map(results, 'id') },
+    include: [
+      { model: Collection, as: 'collection' },
+      { model: User, as: 'createdBy', paranoid: false },
+      { model: User, as: 'updatedBy', paranoid: false },
+    ],
+  });
+
+  return map(results, result => ({
+    ranking: result.searchRanking,
+    context: removeMarkdown(unescape(result.searchContext), {
+      stripHTML: false,
+    }),
+    document: find(documents, { id: result.id }),
+  }));
 };
 
 // Hooks
@@ -282,7 +305,7 @@ Document.prototype.getTimestamp = function() {
 Document.prototype.getSummary = function() {
   const value = Markdown.deserialize(this.text);
   const plain = Plain.serialize(value);
-  const lines = _.compact(plain.split('\n'));
+  const lines = compact(plain.split('\n'));
   return lines.length >= 1 ? lines[1] : '';
 };
 

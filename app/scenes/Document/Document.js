@@ -27,6 +27,7 @@ import DocumentMove from './components/DocumentMove';
 import UiStore from 'stores/UiStore';
 import AuthStore from 'stores/AuthStore';
 import DocumentsStore from 'stores/DocumentsStore';
+import ErrorBoundary from 'components/ErrorBoundary';
 import LoadingPlaceholder from 'components/LoadingPlaceholder';
 import LoadingIndicator from 'components/LoadingIndicator';
 import CenteredContent from 'components/CenteredContent';
@@ -221,17 +222,12 @@ class DocumentScene extends React.Component<Props> {
   };
 
   onSearchLink = async (term: string) => {
-    const resultIds = await this.props.documents.search(term);
+    const results = await this.props.documents.search(term);
 
-    return resultIds.map((id, index) => {
-      const document = this.props.documents.getById(id);
-      if (!document) return {};
-
-      return {
-        title: document.title,
-        url: document.url,
-      };
-    });
+    return results.map((result, index) => ({
+      title: result.document.title,
+      url: result.document.url,
+    }));
   };
 
   onClickLink = (href: string) => {
@@ -286,57 +282,59 @@ class DocumentScene extends React.Component<Props> {
     }
 
     return (
-      <Container key={document.id} isShare={isShare} column auto>
-        {isMoving && <DocumentMove document={document} />}
-        <PageTitle
-          title={document.title.replace(document.emoji, '')}
-          favicon={document.emoji ? emojiToUrl(document.emoji) : undefined}
-        />
-        {(this.isUploading || this.isSaving) && <LoadingIndicator />}
+      <ErrorBoundary>
+        <Container key={document.id} isShare={isShare} column auto>
+          {isMoving && <DocumentMove document={document} />}
+          <PageTitle
+            title={document.title.replace(document.emoji, '')}
+            favicon={document.emoji ? emojiToUrl(document.emoji) : undefined}
+          />
+          {(this.isUploading || this.isSaving) && <LoadingIndicator />}
 
-        <Container justify="center" column auto>
-          {this.isEditing && (
-            <React.Fragment>
-              <Prompt
-                when={document.hasPendingChanges}
-                message={DISCARD_CHANGES}
+          <Container justify="center" column auto>
+            {this.isEditing && (
+              <React.Fragment>
+                <Prompt
+                  when={document.hasPendingChanges}
+                  message={DISCARD_CHANGES}
+                />
+                <Prompt when={this.isUploading} message={UPLOADING_WARNING} />
+              </React.Fragment>
+            )}
+            {!isShare && (
+              <Header
+                document={document}
+                isDraft={!document.publishedAt}
+                isEditing={this.isEditing}
+                isSaving={this.isSaving}
+                isPublishing={this.isPublishing}
+                savingIsDisabled={!document.allowSave}
+                history={this.props.history}
+                onDiscard={this.onDiscard}
+                onSave={this.onSave}
               />
-              <Prompt when={this.isUploading} message={UPLOADING_WARNING} />
-            </React.Fragment>
-          )}
-          {!isShare && (
-            <Header
-              document={document}
-              isDraft={!document.publishedAt}
-              isEditing={this.isEditing}
-              isSaving={this.isSaving}
-              isPublishing={this.isPublishing}
-              savingIsDisabled={!document.allowSave}
-              history={this.props.history}
-              onDiscard={this.onDiscard}
-              onSave={this.onSave}
-            />
-          )}
-          <MaxWidth column auto>
-            <Editor
-              titlePlaceholder="Start with a title…"
-              bodyPlaceholder="…the rest is your canvas"
-              defaultValue={document.text}
-              pretitle={document.emoji}
-              uploadImage={this.onUploadImage}
-              onImageUploadStart={this.onImageUploadStart}
-              onImageUploadStop={this.onImageUploadStop}
-              onSearchLink={this.onSearchLink}
-              onClickLink={this.onClickLink}
-              onChange={this.onChange}
-              onSave={this.onSave}
-              onCancel={this.onDiscard}
-              readOnly={!this.isEditing}
-              toc
-            />
-          </MaxWidth>
+            )}
+            <MaxWidth column auto>
+              <Editor
+                titlePlaceholder="Start with a title…"
+                bodyPlaceholder="…the rest is your canvas"
+                defaultValue={document.text}
+                pretitle={document.emoji}
+                uploadImage={this.onUploadImage}
+                onImageUploadStart={this.onImageUploadStart}
+                onImageUploadStop={this.onImageUploadStop}
+                onSearchLink={this.onSearchLink}
+                onClickLink={this.onClickLink}
+                onChange={this.onChange}
+                onSave={this.onSave}
+                onCancel={this.onDiscard}
+                readOnly={!this.isEditing}
+                toc
+              />
+            </MaxWidth>
+          </Container>
         </Container>
-      </Container>
+      </ErrorBoundary>
     );
   }
 }
