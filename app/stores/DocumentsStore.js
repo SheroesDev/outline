@@ -1,7 +1,7 @@
 // @flow
 import { observable, action, computed, ObservableMap, runInAction } from 'mobx';
 import { client } from 'utils/ApiClient';
-import _ from 'lodash';
+import { map, find, orderBy, filter, uniq } from 'lodash';
 import invariant from 'invariant';
 
 import BaseStore from 'stores/BaseStore';
@@ -21,18 +21,16 @@ type FetchOptions = {
 };
 
 class DocumentsStore extends BaseStore {
-  @observable recentlyViewedIds: Array<string> = [];
-  @observable recentlyEditedIds: Array<string> = [];
+  @observable recentlyViewedIds: string[] = [];
+  @observable recentlyEditedIds: string[] = [];
   @observable data: Map<string, Document> = new ObservableMap([]);
   @observable isLoaded: boolean = false;
   @observable isFetching: boolean = false;
 
   ui: UiStore;
 
-  /* Computed */
-
   @computed
-  get recentlyViewed(): Array<Document> {
+  get recentlyViewed(): Document[] {
     const docs = [];
     this.recentlyViewedIds.forEach(id => {
       const doc = this.getById(id);
@@ -51,16 +49,24 @@ class DocumentsStore extends BaseStore {
     return docs;
   }
 
+  createdByUser(userId: string): Document[] {
+    return orderBy(
+      filter(this.data.values(), document => document.createdBy.id === userId),
+      'updatedAt',
+      'desc'
+    );
+  }
+
   pinnedInCollection(collectionId: string): Document[] {
-    return _.filter(
+    return filter(
       this.recentlyEditedInCollection(collectionId),
       document => document.pinned
     );
   }
 
   recentlyEditedInCollection(collectionId: string): Document[] {
-    return _.orderBy(
-      _.filter(
+    return orderBy(
+      filter(
         this.data.values(),
         document =>
           document.collectionId === collectionId && !!document.publishedAt
@@ -72,13 +78,13 @@ class DocumentsStore extends BaseStore {
 
   @computed
   get starred(): Document[] {
-    return _.filter(this.data.values(), 'starred');
+    return filter(this.data.values(), 'starred');
   }
 
   @computed
   get drafts(): Document[] {
-    return _.filter(
-      _.orderBy(this.data.values(), 'updatedAt', 'desc'),
+    return filter(
+      orderBy(this.data.values(), 'updatedAt', 'desc'),
       doc => !doc.publishedAt
     );
   }
@@ -96,7 +102,7 @@ class DocumentsStore extends BaseStore {
   fetchPage = async (
     request: string = 'list',
     options: ?PaginationParams
-  ): Promise<*> => {
+  ): Promise<?(Document[])> => {
     this.isFetching = true;
 
     try {
@@ -118,11 +124,13 @@ class DocumentsStore extends BaseStore {
   };
 
   @action
-  fetchRecentlyModified = async (options: ?PaginationParams): Promise<*> => {
+  fetchRecentlyEdited = async (options: ?PaginationParams): Promise<*> => {
     const data = await this.fetchPage('list', options);
 
-    runInAction('DocumentsStore#fetchRecentlyModified', () => {
-      this.recentlyEditedIds = _.map(data, 'id');
+    runInAction('DocumentsStore#fetchRecentlyEdited', () => {
+      this.recentlyEditedIds.replace(
+        uniq(this.recentlyEditedIds.concat(map(data, 'id')))
+      );
     });
     return data;
   };
@@ -132,24 +140,31 @@ class DocumentsStore extends BaseStore {
     const data = await this.fetchPage('viewed', options);
 
     runInAction('DocumentsStore#fetchRecentlyViewed', () => {
-      this.recentlyViewedIds = _.map(data, 'id');
+      this.recentlyViewedIds.replace(
+        uniq(this.recentlyViewedIds.concat(map(data, 'id')))
+      );
     });
     return data;
   };
 
   @action
-  fetchStarred = async (options: ?PaginationParams): Promise<*> => {
-    await this.fetchPage('starred', options);
+  fetchStarred = (options: ?PaginationParams): Promise<*> => {
+    return this.fetchPage('starred', options);
   };
 
   @action
-  fetchDrafts = async (options: ?PaginationParams): Promise<*> => {
-    await this.fetchPage('drafts', options);
+  fetchDrafts = (options: ?PaginationParams): Promise<*> => {
+    return this.fetchPage('drafts', options);
   };
 
   @action
-  fetchPinned = async (options: ?PaginationParams): Promise<*> => {
-    await this.fetchPage('pinned', options);
+  fetchPinned = (options: ?PaginationParams): Promise<*> => {
+    return this.fetchPage('pinned', options);
+  };
+
+  @action
+  fetchOwned = (options: ?PaginationParams): Promise<*> => {
+    return this.fetchPage('list', options);
   };
 
   @action
@@ -244,7 +259,7 @@ class DocumentsStore extends BaseStore {
    * Match documents by the url ID as the title slug can change
    */
   getByUrl = (url: string): ?Document => {
-    return _.find(this.data.values(), doc => url.endsWith(doc.urlId));
+    return find(this.data.values(), doc => url.endsWith(doc.urlId));
   };
 
   constructor(options: Options) {
@@ -261,11 +276,11 @@ class DocumentsStore extends BaseStore {
 
     // Re-fetch dashboard content so that we don't show deleted documents
     this.on('collections.delete', () => {
-      this.fetchRecentlyModified();
+      this.fetchRecentlyEdited();
       this.fetchRecentlyViewed();
     });
     this.on('documents.delete', () => {
-      this.fetchRecentlyModified();
+      this.fetchRecentlyEdited();
       this.fetchRecentlyViewed();
     });
   }
