@@ -56,16 +56,20 @@ export default function Routes() {
             <Route exact path="/settings/export" component={Export} />
             <Route exact path="/collections/:id" component={Collection} />
             <Route exact path={`/d/${slug}`} component={RedirectDocument} />
-            <Route exact path={`/doc/${slug}`} component={Document} />
-            <Route exact path={`/doc/${slug}/move`} component={Document} />
-            <Route exact path="/search" component={Search} />
-            <Route exact path="/search/:query" component={Search} />
-            <Route path="/404" component={Error404} />
+            <Route
+              exact
+              path={`/doc/${slug}/history/:revisionId?`}
+              component={Document}
+            />
             <RouteSidebarHidden
               exact
               path={`/doc/${slug}/edit`}
               component={Document}
             />
+            <Route path={`/doc/${slug}`} component={Document} />
+            <Route exact path="/search" component={Search} />
+            <Route exact path="/search/:query" component={Search} />
+            <Route path="/404" component={Error404} />
             <RouteSidebarHidden
               exact
               path="/collections/:id/new"
