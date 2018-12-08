@@ -3,7 +3,7 @@ import * as React from 'react';
 import { withRouter } from 'react-router-dom';
 import type { Location } from 'react-router-dom';
 import { observer, inject } from 'mobx-react';
-import { HomeIcon, EditIcon, SearchIcon, StarredIcon } from 'outline-icons';
+import { HomeIcon, EditIcon, SearchIcon, StarredIcon, TrashIcon } from 'outline-icons';
 
 import Flex from 'shared/components/Flex';
 import AccountMenu from 'menus/AccountMenu';
@@ -74,6 +74,10 @@ class MainSidebar extends React.Component<Props> {
               >
                 Drafts <Bubble count={documents.drafts.length} />
               </SidebarLink>
+
+              <SidebarLink to="/trash" icon={<TrashIcon />}>
+                  Trash
+                </SidebarLink>
             </Section>
             <Section>
               <Collections

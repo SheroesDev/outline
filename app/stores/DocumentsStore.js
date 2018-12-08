@@ -86,6 +86,14 @@ export default class DocumentsStore extends BaseStore<Document> {
   }
 
   @computed
+  get deleted(): Document[] {
+    return filter(
+      orderBy(Array.from(this.data.values()), 'deletedAt', 'desc'),
+      doc => doc.deletedAt
+    );
+  }
+
+  @computed
   get active(): ?Document {
     return this.rootStore.ui.activeDocumentId
       ? this.data.get(this.rootStore.ui.activeDocumentId)
@@ -147,6 +155,11 @@ export default class DocumentsStore extends BaseStore<Document> {
   @action
   fetchDrafts = (options: ?PaginationParams): Promise<*> => {
     return this.fetchNamedPage('drafts', options);
+  };
+
+  @action
+  fetchDeleted = (options: ?PaginationParams): Promise<*> => {
+    return this.fetchNamedPage('deleted', options);
   };
 
   @action

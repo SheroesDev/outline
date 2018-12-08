@@ -157,6 +157,30 @@ router.post('documents.drafts', auth(), pagination(), async ctx => {
   };
 });
 
+router.post('documents.deleted', auth(), pagination(), async ctx => {
+  let { sort = 'deletedAt', direction } = ctx.body;
+  if (direction !== 'ASC') direction = 'DESC';
+
+  const user = ctx.state.user;
+  const documents = await Document.findAll({
+    // $FlowFixMe
+    where: { deletedAt: { [Op.ne]: null } },
+    paranoid: false, //Needed to override sequelize deletedAt
+    order: [[sort, direction]],
+    offset: ctx.state.pagination.offset,
+    limit: ctx.state.pagination.limit,
+  });
+
+  const data = await Promise.all(
+    documents.map(document => presentDocument(ctx, document))
+  );
+
+  ctx.body = {
+    pagination: ctx.state.pagination,
+    data,
+  };
+});
+
 router.post('documents.info', auth({ required: false }), async ctx => {
   const { id, shareId } = ctx.body;
   ctx.assertPresent(id || shareId, 'id or shareId is required');
