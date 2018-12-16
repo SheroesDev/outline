@@ -29,13 +29,20 @@ function PublishingInfo({ collection, document }: Props) {
     updatedAt,
     updatedBy,
     publishedAt,
+    deletedAt,
     isDraft,
   } = document;
   const neverUpdated = publishedAt === updatedAt;
 
   return (
     <Container align="center">
-      {publishedAt && neverUpdated ? (
+      {
+        deletedAt ? (
+        <span>
+          {updatedBy.name} deleted <Time dateTime={deletedAt} /> ago
+        </span>
+        ) :
+        (publishedAt && neverUpdated ? (
         <span>
           {updatedBy.name} published <Time dateTime={publishedAt} /> ago
         </span>
@@ -52,7 +59,7 @@ function PublishingInfo({ collection, document }: Props) {
             </Modified>
           )}
         </React.Fragment>
-      )}
+      ))}
       {collection && (
         <span>
           &nbsp;in <strong>{isDraft ? 'Drafts' : collection.name}</strong>

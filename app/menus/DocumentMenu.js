@@ -74,9 +74,22 @@ class DocumentMenu extends React.Component<Props> {
     this.props.ui.setActiveModal('document-share', { document });
   };
 
+  handleUndelete = (ev: SyntheticEvent<*>) => {
+    this.props.document.undelete();
+  };
+
   render() {
     const { document, label, className, showPrint, auth } = this.props;
     const canShareDocuments = auth.team && auth.team.sharing;
+    if(document.deletedAt){
+      return (
+        <DropdownMenu label={label || <MoreIcon />} className={className}>
+          <DropdownMenuItem onClick={this.handleUndelete}>
+            Restore
+          </DropdownMenuItem>
+        </DropdownMenu>
+      );
+    }
 
     return (
       <DropdownMenu label={label || <MoreIcon />} className={className}>

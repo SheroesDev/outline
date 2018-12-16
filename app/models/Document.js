@@ -166,6 +166,17 @@ export default class Document extends BaseModel {
   };
 
   @action
+  undelete = async () => {
+    // this.starred = false;
+    try {
+      await this.store.undelete(this);
+    } catch (err) {
+      this.starred = true;
+      throw err;
+    }
+  };
+
+  @action
   view = async () => {
     this.views++;
     await client.post('/views.create', { id: this.id });

@@ -367,6 +367,27 @@ router.post('documents.unstar', auth(), async ctx => {
   });
 });
 
+router.post('documents.undelete', auth(), async ctx => {
+  const { id } = ctx.body;
+  ctx.assertPresent(id, 'id is required');
+  const user = ctx.state.user;
+  console.log('undelete log');
+  const document = await Document.findOne({
+    where: { id: id },
+    paranoid: false
+  });
+
+  console.log(user.teamId, document);
+  authorize(user, 'update', document);
+
+  document.setDataValue('deletedAt', null);
+  await document.save({paranoid: false});
+
+  ctx.body = {
+    data: await presentDocument(ctx, document),
+  };
+});
+
 router.post('documents.create', auth(), async ctx => {
   const { title, text, publish, parentDocument, index } = ctx.body;
   const collectionId = ctx.body.collection;

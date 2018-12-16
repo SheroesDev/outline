@@ -31,7 +31,7 @@ class Trash extends React.Component<Props> {
     return (
       <CenteredContent column auto>
         <PageTitle title="Trash" />
-        <Heading>Trash - Deleted documents</Heading>
+        <Heading>Trash</Heading>
         {showLoading && <ListPlaceholder />}
         {showEmpty && <Empty>You’ve not got any deleted documents at the moment.</Empty>}
         <DocumentList documents={deleted} showCollection />

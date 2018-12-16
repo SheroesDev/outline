@@ -40,7 +40,7 @@ export default class DocumentsStore extends BaseStore<Document> {
   createdByUser(userId: string): * {
     return orderBy(
       filter(
-        Array.from(this.data.values()),
+        Array.from(this.orderedData),
         document => document.createdBy.id === userId
       ),
       'updatedAt',
@@ -58,7 +58,7 @@ export default class DocumentsStore extends BaseStore<Document> {
   recentlyUpdatedInCollection(collectionId: string): Document[] {
     return orderBy(
       filter(
-        Array.from(this.data.values()),
+        Array.from(this.orderedData),
         document =>
           document.collectionId === collectionId && !!document.publishedAt
       ),
@@ -80,7 +80,7 @@ export default class DocumentsStore extends BaseStore<Document> {
   @computed
   get drafts(): Document[] {
     return filter(
-      orderBy(Array.from(this.data.values()), 'updatedAt', 'desc'),
+      orderBy(Array.from(this.orderedData), 'updatedAt', 'desc'),
       doc => !doc.publishedAt
     );
   }
@@ -301,6 +301,10 @@ export default class DocumentsStore extends BaseStore<Document> {
 
   unstar = (document: Document) => {
     return client.post('/documents.unstar', { id: document.id });
+  };
+
+  undelete = (document: Document) => {
+    return client.post('/documents.undelete', { id: document.id });
   };
 
   getByUrl = (url: string): ?Document => {

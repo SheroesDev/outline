@@ -1,7 +1,7 @@
 // @flow
 import invariant from 'invariant';
 import { observable, set, action, computed, runInAction } from 'mobx';
-import { orderBy } from 'lodash';
+import { orderBy, filter } from 'lodash';
 import { client } from 'utils/ApiClient';
 import RootStore from 'stores/RootStore';
 import BaseModel from '../models/BaseModel';
@@ -157,6 +157,9 @@ export default class BaseStore<T: BaseModel> {
   @computed
   get orderedData(): T[] {
     // $FlowIssue
-    return orderBy(Array.from(this.data.values()), 'createdAt', 'desc');
+    return filter(
+      orderBy(Array.from(this.data.values()), 'createdAt', 'desc'),
+      doc => !doc.deletedAt
+      );
   }
 }
