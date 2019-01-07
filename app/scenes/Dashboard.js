@@ -12,6 +12,7 @@ import CenteredContent from 'components/CenteredContent';
 import PageTitle from 'components/PageTitle';
 import Tabs from 'components/Tabs';
 import Tab from 'components/Tab';
+import TipInvite from 'components/TipInvite';
 import PaginatedDocumentList from '../components/PaginatedDocumentList';
 
 type Props = {
@@ -23,12 +24,16 @@ type Props = {
 class Dashboard extends React.Component<Props> {
   render() {
     const { documents, auth } = this.props;
-    if (!auth.user) return null;
+    if (!auth.user || !auth.team) return null;
     const user = auth.user.id;
 
     return (
       <CenteredContent>
         <PageTitle title="Home" />
+        <TipInvite
+          team={auth.team}
+          disabled={!auth.team.subdomain || !auth.user.isAdmin}
+        />
         <h1>Home</h1>
         <Tabs>
           <Tab to="/dashboard" exact>

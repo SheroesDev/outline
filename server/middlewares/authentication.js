@@ -93,7 +93,7 @@ export default function auth(options?: { required?: boolean } = {}) {
       ctx.cache[user.id] = user;
     }
 
-    ctx.signIn = (user, team, service) => {
+    ctx.signIn = (user, team, service, isFirstSignin = false) => {
       // update the database when the user last signed in
       user.updateSignedIn(ctx.request.ip);
 
@@ -116,9 +116,9 @@ export default function auth(options?: { required?: boolean } = {}) {
         const sessions = JSON.stringify({
           ...existing,
           [team.id]: {
-            name: team.name,
+            name: encodeURIComponent(team.name),
             logoUrl: team.logoUrl,
-            url: team.url,
+            url: encodeURIComponent(team.url),
           },
         });
         ctx.cookies.set('sessions', sessions, {
@@ -138,7 +138,7 @@ export default function auth(options?: { required?: boolean } = {}) {
           httpOnly: false,
           expires,
         });
-        ctx.redirect(`${team.url}/dashboard`);
+        ctx.redirect(`${team.url}/dashboard${isFirstSignin ? '?welcome' : ''}`);
       }
     };
 

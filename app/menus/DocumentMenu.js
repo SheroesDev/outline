@@ -18,6 +18,7 @@ type Props = {
   document: Document,
   className: string,
   showPrint?: boolean,
+  showToggleEmbeds?: boolean,
 };
 
 @observer

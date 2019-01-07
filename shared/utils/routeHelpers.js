@@ -57,6 +57,10 @@ export function features(): string {
   return `${process.env.URL}/#features`;
 }
 
+export function pricing(): string {
+  return `${process.env.URL}/pricing`;
+}
+
 export function developers(): string {
   return `${process.env.URL}/developers`;
 }
@@ -71,6 +75,10 @@ export function signin(service: string = 'slack'): string {
 
 export function about(): string {
   return `${process.env.URL}/about`;
+}
+
+export function integrations(): string {
+  return `${process.env.URL}/integrations`;
 }
 
 export function privacy(): string {

@@ -277,7 +277,8 @@ class DocumentScene extends React.Component<Props> {
   };
 
   render() {
-    const { location, match } = this.props;
+    const { location, auth, match } = this.props;
+    const team = auth.team;
     const Editor = this.editorComponent;
     const document = this.document;
     const revision = this.revision;
@@ -299,13 +300,18 @@ class DocumentScene extends React.Component<Props> {
     if (!document || !Editor) {
       return (
         <Container column auto>
-          <PageTitle title={location.state ? location.state.title : ''} />
+          <PageTitle
+            title={location.state ? location.state.title : 'Untitled'}
+          />
           <CenteredContent>
             <LoadingState />
           </CenteredContent>
         </Container>
       );
     }
+
+    const embedsDisabled =
+      document.embedsDisabled || (team && !team.documentEmbeds);
 
     return (
       <ErrorBoundary>
@@ -326,7 +332,7 @@ class DocumentScene extends React.Component<Props> {
             )}
           />
           <PageTitle
-            title={document.title.replace(document.emoji, '')}
+            title={document.title.replace(document.emoji, '') || 'Untitled'}
             favicon={document.emoji ? emojiToUrl(document.emoji) : undefined}
           />
           {(this.isUploading || this.isSaving) && <LoadingIndicator />}
@@ -359,10 +365,12 @@ class DocumentScene extends React.Component<Props> {
             )}
             <MaxWidth column auto>
               <Editor
+                key={embedsDisabled ? 'embeds-disabled' : 'embeds-enabled'}
                 titlePlaceholder="Start with a title…"
                 bodyPlaceholder="…the rest is your canvas"
                 defaultValue={revision ? revision.text : document.text}
                 pretitle={document.emoji}
+                disableEmbeds={embedsDisabled}
                 onImageUploadStart={this.onImageUploadStart}
                 onImageUploadStop={this.onImageUploadStop}
                 onSearchLink={this.onSearchLink}
