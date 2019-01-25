@@ -3,10 +3,10 @@ import * as React from 'react';
 import ReactDOM from 'react-dom';
 import keydown from 'react-keydown';
 import Waypoint from 'react-waypoint';
+import { withRouter } from 'react-router-dom';
 import { observable, action } from 'mobx';
 import { observer, inject } from 'mobx-react';
 import { debounce } from 'lodash';
-import { withRouter } from 'react-router-dom';
 import styled from 'styled-components';
 import ArrowKeyNavigation from 'boundless-arrow-key-navigation';
 
