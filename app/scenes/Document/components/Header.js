@@ -7,9 +7,11 @@ import { Redirect } from 'react-router-dom';
 import styled from 'styled-components';
 import breakpoint from 'styled-components-breakpoint';
 import { NewDocumentIcon } from 'outline-icons';
+import { transparentize } from 'polished';
 import Document from 'models/Document';
 import AuthStore from 'stores/AuthStore';
 import { documentEditUrl } from 'utils/routeHelpers';
+import { meta } from 'utils/keyboard';
 
 import Flex from 'shared/components/Flex';
 import Breadcrumb from './Breadcrumb';
@@ -107,6 +109,7 @@ class Header extends React.Component<Props> {
         justify="space-between"
         readOnly={!isEditing}
         isCompact={this.isScrolled}
+        shrink={false}
       >
         <Modal
           isOpen={this.showShareModal}
@@ -149,7 +152,7 @@ class Header extends React.Component<Props> {
               <Action>
                 <Button
                   onClick={this.handleSave}
-                  title="Save changes (Cmd+Enter)"
+                  title={`Save changes ${isDraft ? '' : `${meta}+Enter`}`}
                   disabled={savingIsDisabled}
                   isSaving={isSaving}
                   neutral={isDraft}
@@ -164,7 +167,7 @@ class Header extends React.Component<Props> {
             <Action>
               <Button
                 onClick={this.handlePublish}
-                title="Publish document (Cmd+Enter)"
+                title={`Publish document (${meta}+Enter)`}
                 disabled={savingIsDisabled}
                 small
               >
@@ -225,9 +228,9 @@ const Actions = styled(Flex)`
   right: 0;
   left: 0;
   z-index: 1;
-  background: rgba(255, 255, 255, 0.9);
+  background: ${props => transparentize(0.1, props.theme.background)};
   border-bottom: 1px solid
-    ${props => (props.isCompact ? props.theme.smoke : 'transparent')};
+    ${props => (props.isCompact ? props.theme.background : 'transparent')};
   padding: 12px;
   transition: all 100ms ease-out;
   transform: translate3d(0, 0, 0);

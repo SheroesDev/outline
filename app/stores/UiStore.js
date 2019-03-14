@@ -7,6 +7,8 @@ import Collection from 'models/Collection';
 import type { Toast } from '../types';
 
 class UiStore {
+  @observable
+  theme: 'light' | 'dark' = window.localStorage.getItem('theme') || 'light';
   @observable activeModalName: ?string;
   @observable activeModalProps: ?Object;
   @observable activeDocumentId: ?string;
@@ -15,6 +17,12 @@ class UiStore {
   @observable editMode: boolean = false;
   @observable mobileSidebarVisible: boolean = false;
   @observable toasts: Map<string, Toast> = new Map();
+
+  @action
+  toggleDarkMode = () => {
+    this.theme = this.theme === 'dark' ? 'light' : 'dark';
+    window.localStorage.setItem('theme', this.theme);
+  };
 
   @action
   setActiveModal = (name: string, props: ?Object): void => {
@@ -88,6 +96,8 @@ class UiStore {
     message: string,
     type?: 'warning' | 'error' | 'info' | 'success' = 'success'
   ) => {
+    if (!message) return;
+
     const id = v4();
     const createdAt = new Date().toISOString();
     this.toasts.set(id, { message, type, createdAt, id });
