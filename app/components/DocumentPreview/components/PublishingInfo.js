@@ -5,10 +5,13 @@ import Collection from 'models/Collection';
 import Document from 'models/Document';
 import Flex from 'shared/components/Flex';
 import Time from 'shared/components/Time';
+import Breadcrumb from 'shared/components/Breadcrumb';
 
 const Container = styled(Flex)`
   color: ${props => props.theme.textTertiary};
   font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
 `;
 
 const Modified = styled.span`
@@ -30,33 +33,55 @@ function PublishingInfo({ collection, showPublished, document }: Props) {
     updatedAt,
     updatedBy,
     publishedAt,
+    archivedAt,
+    deletedAt,
     isDraft,
   } = document;
   const neverUpdated = publishedAt === updatedAt;
+  let content;
+
+  if (deletedAt) {
+    content = (
+      <span>
+        &nbsp;deleted <Time dateTime={deletedAt} /> ago
+      </span>
+    );
+  } else if (archivedAt) {
+    content = (
+      <span>
+        &nbsp;archived <Time dateTime={archivedAt} /> ago
+      </span>
+    );
+  } else if (publishedAt && (neverUpdated || showPublished)) {
+    content = (
+      <span>
+        &nbsp;published <Time dateTime={publishedAt} /> ago
+      </span>
+    );
+  } else if (isDraft) {
+    content = (
+      <span>
+        &nbsp;saved <Time dateTime={updatedAt} /> ago
+      </span>
+    );
+  } else {
+    content = (
+      <Modified highlight={modifiedSinceViewed}>
+        &nbsp;updated <Time dateTime={updatedAt} /> ago
+      </Modified>
+    );
+  }
 
   return (
     <Container align="center">
-      {publishedAt && (neverUpdated || showPublished) ? (
-        <span>
-          {updatedBy.name} published <Time dateTime={publishedAt} /> ago
-        </span>
-      ) : (
-        <React.Fragment>
-          {updatedBy.name}
-          {isDraft ? (
-            <span>
-              &nbsp;saved <Time dateTime={updatedAt} /> ago
-            </span>
-          ) : (
-            <Modified highlight={modifiedSinceViewed}>
-              &nbsp;updated <Time dateTime={updatedAt} /> ago
-            </Modified>
-          )}
-        </React.Fragment>
-      )}
+      {updatedBy.name}
+      {content}
       {collection && (
         <span>
-          &nbsp;in <strong>{isDraft ? 'Drafts' : collection.name}</strong>
+          &nbsp;in&nbsp;
+          <strong>
+            {isDraft ? 'Drafts' : <Breadcrumb document={document} onlyText />}
+          </strong>
         </span>
       )}
     </Container>
