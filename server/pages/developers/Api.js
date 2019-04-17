@@ -250,11 +250,13 @@ export default function Pricing() {
 
           <Method method="documents.search" label="Search documents">
             <Description>
-              This methods allows you to search all of your documents with
-              keywords.
+              This methods allows you to search your teams documents with
+              keywords. Search results will be restricted to those accessible by
+              the current access token.
             </Description>
             <Arguments>
               <Argument id="query" description="Search query" required />
+              <Argument id="includeArchived" description="Boolean" />
             </Arguments>
           </Method>
 
@@ -352,8 +354,7 @@ export default function Pricing() {
 
           <Method method="documents.move" label="Move document in a collection">
             <Description>
-              Move a document into a new location inside the collection. This is
-              easily done by defining the parent document ID. If no parent
+              Move a document to a new location or collection. If no parent
               document is provided, the document will be moved to the collection
               root.
             </Description>
@@ -364,8 +365,13 @@ export default function Pricing() {
                 required
               />
               <Argument
-                id="parentDocument"
-                description="ID of the new parent document (if any)"
+                id="collectionId"
+                description="ID of the collection"
+                required
+              />
+              <Argument
+                id="parentDocumentId"
+                description="ID of the new parent document"
               />
             </Arguments>
           </Method>

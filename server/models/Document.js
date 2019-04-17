@@ -224,7 +224,7 @@ Document.searchForUser = async (
     FROM documents
     WHERE "searchVector" @@ to_tsquery('english', :query) AND
       "collectionId" IN(:collectionIds) AND
-      "archivedAt" IS NULL AND
+      ${options.includeArchived ? '' : '"archivedAt" IS NULL AND'}
       "deletedAt" IS NULL AND
       ("publishedAt" IS NOT NULL OR "createdById" = '${user.id}')
     ORDER BY 
@@ -362,7 +362,7 @@ Document.prototype.publish = async function() {
 Document.prototype.archive = async function(userId) {
   // archive any children and remove from the document structure
   const collection = await this.getCollection();
-  await collection.removeDocumentInStructure(this, { save: true });
+  await collection.removeDocumentInStructure(this);
   this.collection = collection;
 
   await this.archiveWithChildren(userId);
