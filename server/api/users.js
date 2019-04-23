@@ -27,13 +27,15 @@ router.post('users.list', auth(), pagination(), async ctx => {
   ctx.body = {
     pagination: ctx.state.pagination,
     data: users.map(listUser =>
-      presentUser(ctx, listUser, { includeDetails: user.isAdmin })
+      presentUser(listUser, { includeDetails: user.isAdmin })
     ),
   };
 });
 
 router.post('users.info', auth(), async ctx => {
-  ctx.body = { data: await presentUser(ctx, ctx.state.user) };
+  ctx.body = {
+    data: presentUser(ctx.state.user),
+  };
 });
 
 router.post('users.update', auth(), async ctx => {
@@ -48,7 +50,9 @@ router.post('users.update', auth(), async ctx => {
 
   await user.save();
 
-  ctx.body = { data: await presentUser(ctx, user, { includeDetails: true }) };
+  ctx.body = {
+    data: presentUser(user, { includeDetails: true }),
+  };
 });
 
 router.post('users.s3Upload', auth(), async ctx => {
@@ -112,7 +116,7 @@ router.post('users.promote', auth(), async ctx => {
   await team.addAdmin(user);
 
   ctx.body = {
-    data: presentUser(ctx, user, { includeDetails: true }),
+    data: presentUser(user, { includeDetails: true }),
   };
 });
 
@@ -132,7 +136,7 @@ router.post('users.demote', auth(), async ctx => {
   }
 
   ctx.body = {
-    data: presentUser(ctx, user, { includeDetails: true }),
+    data: presentUser(user, { includeDetails: true }),
   };
 });
 
@@ -158,7 +162,7 @@ router.post('users.suspend', auth(), async ctx => {
   }
 
   ctx.body = {
-    data: presentUser(ctx, user, { includeDetails: true }),
+    data: presentUser(user, { includeDetails: true }),
   };
 });
 
@@ -181,7 +185,7 @@ router.post('users.activate', auth(), async ctx => {
   await team.activateUser(user, admin);
 
   ctx.body = {
-    data: presentUser(ctx, user, { includeDetails: true }),
+    data: presentUser(user, { includeDetails: true }),
   };
 });
 

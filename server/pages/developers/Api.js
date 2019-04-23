@@ -6,7 +6,7 @@ import PageTitle from '../components/PageTitle';
 import Header from '../components/Header';
 import Content from '../components/Content';
 
-export default function Pricing() {
+export default function Api() {
   return (
     <Grid>
       <PageTitle title="API Reference" />
@@ -256,7 +256,13 @@ export default function Pricing() {
             </Description>
             <Arguments>
               <Argument id="query" description="Search query" required />
+              <Argument id="userId" description="User ID" />
+              <Argument id="collectionId" description="Collection ID" />
               <Argument id="includeArchived" description="Boolean" />
+              <Argument
+                id="dateFilter"
+                description="Date range to consider (day, week, month or year)"
+              />
             </Arguments>
           </Method>
 
@@ -265,11 +271,11 @@ export default function Pricing() {
               This method allows you to publish a new document under an existing
               collection. By default a document is set to the parent collection
               root. If you want to create a subdocument, you can pass{' '}
-              <Code>parentDocument</Code> to set parent document.
+              <Code>parentDocumentId</Code> to set parent document.
             </Description>
             <Arguments>
               <Argument
-                id="collection"
+                id="collectionId"
                 description={
                   <span>
                     <Code>ID</Code> of the collection to which the document is
@@ -289,7 +295,7 @@ export default function Pricing() {
                 required
               />
               <Argument
-                id="parentDocument"
+                id="parentDocumentId"
                 description={
                   <span>
                     <Code>ID</Code> of the parent document within the collection

@@ -18,7 +18,7 @@ export default class Slack {
   async integrationCreated(event: Event) {
     const integration = await Integration.findOne({
       where: {
-        id: event.model.id,
+        id: event.modelId,
         service: 'slack',
         type: 'post',
       },
@@ -57,8 +57,14 @@ export default class Slack {
   }
 
   async documentUpdated(event: Event) {
-    const document = await Document.findById(event.model.id);
+    // lets not send a notification on every autosave update
+    if (event.autosave) return;
+
+    const document = await Document.findById(event.modelId);
     if (!document) return;
+
+    // never send information on draft documents
+    if (!document.publishedAt) return;
 
     const integration = await Integration.findOne({
       where: {

@@ -10,7 +10,6 @@ import removeMarkdown from '@tommoor/remove-markdown';
 import isUUID from 'validator/lib/isUUID';
 import { Collection, User } from '../models';
 import { DataTypes, sequelize } from '../sequelize';
-import events from '../events';
 import parseTitle from '../../shared/utils/parseTitle';
 import unescape from '../../shared/utils/unescape';
 import Revision from './Revision';
@@ -216,32 +215,60 @@ Document.searchForUser = async (
   const offset = options.offset || 0;
   const wildcardQuery = `${sequelize.escape(query)}:*`;
 
-  const sql = `
-    SELECT
-      id,
-      ts_rank(documents."searchVector", to_tsquery('english', :query)) as "searchRanking",
-      ts_headline('english', "text", to_tsquery('english', :query), 'MaxFragments=1, MinWords=20, MaxWords=30') as "searchContext"
-    FROM documents
-    WHERE "searchVector" @@ to_tsquery('english', :query) AND
-      "collectionId" IN(:collectionIds) AND
-      ${options.includeArchived ? '' : '"archivedAt" IS NULL AND'}
-      "deletedAt" IS NULL AND
-      ("publishedAt" IS NOT NULL OR "createdById" = '${user.id}')
-    ORDER BY 
-      "searchRanking" DESC,
-      "updatedAt" DESC
-    LIMIT :limit
-    OFFSET :offset;
-  `;
+  // Ensure we're filtering by the users accessible collections. If
+  // collectionId is passed as an option it is assumed that the authorization
+  // has already been done in the router
+  let collectionIds;
+  if (options.collectionId) {
+    collectionIds = [options.collectionId];
+  } else {
+    collectionIds = await user.collectionIds();
+  }
 
-  const collectionIds = await user.collectionIds();
+  let dateFilter;
+  if (options.dateFilter) {
+    dateFilter = `1 ${options.dateFilter}`;
+  }
+
+  // Build the SQL query to get documentIds, ranking, and search term context
+  const sql = `
+  SELECT
+    id,
+    ts_rank(documents."searchVector", to_tsquery('english', :query)) as "searchRanking",
+    ts_headline('english', "text", to_tsquery('english', :query), 'MaxFragments=1, MinWords=20, MaxWords=30') as "searchContext"
+  FROM documents
+  WHERE "searchVector" @@ to_tsquery('english', :query) AND
+    "teamId" = :teamId AND
+    "collectionId" IN(:collectionIds) AND
+    ${
+      options.dateFilter ? '"updatedAt" > now() - interval :dateFilter AND' : ''
+    }
+    ${
+      options.collaboratorIds
+        ? '"collaboratorIds" @> ARRAY[:collaboratorIds]::uuid[] AND'
+        : ''
+    }
+    ${options.includeArchived ? '' : '"archivedAt" IS NULL AND'}
+    "deletedAt" IS NULL AND
+    ("publishedAt" IS NOT NULL OR "createdById" = :userId)
+  ORDER BY 
+    "searchRanking" DESC,
+    "updatedAt" DESC
+  LIMIT :limit
+  OFFSET :offset;
+`;
+
   const results = await sequelize.query(sql, {
     type: sequelize.QueryTypes.SELECT,
     replacements: {
+      teamId: user.teamId,
+      userId: user.id,
+      collaboratorIds: options.collaboratorIds,
       query: wildcardQuery,
       limit,
       offset,
       collectionIds,
+      dateFilter,
     },
   });
 
@@ -289,13 +316,8 @@ Document.addHook('afterCreate', async model => {
   await collection.addDocumentToStructure(model);
   model.collection = collection;
 
-  events.add({ name: 'documents.create', model });
   return model;
 });
-
-Document.addHook('afterDestroy', model =>
-  events.add({ name: 'documents.delete', model })
-);
 
 // Instance methods
 
@@ -353,7 +375,6 @@ Document.prototype.publish = async function() {
   await this.save();
   this.collection = collection;
 
-  events.add({ name: 'documents.publish', model: this });
   return this;
 };
 
@@ -367,7 +388,6 @@ Document.prototype.archive = async function(userId) {
 
   await this.archiveWithChildren(userId);
 
-  events.add({ name: 'documents.archive', model: this });
   return this;
 };
 
@@ -397,7 +417,6 @@ Document.prototype.unarchive = async function(userId) {
   this.lastModifiedById = userId;
   await this.save();
 
-  events.add({ name: 'documents.unarchive', model: this });
   return this;
 };
 
@@ -417,7 +436,6 @@ Document.prototype.delete = function(options) {
 
     await this.destroy({ transaction, ...options });
 
-    events.add({ name: 'documents.delete', model: this });
     return this;
   });
 };

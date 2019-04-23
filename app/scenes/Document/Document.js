@@ -101,7 +101,7 @@ class DocumentScene extends React.Component<Props> {
   goToMove(ev) {
     ev.preventDefault();
 
-    if (this.document && !this.document.isArchived && this.document.isDraft) {
+    if (this.document && !this.document.isArchived && !this.document.isDraft) {
       this.props.history.push(documentMoveUrl(this.document));
     }
   }
@@ -117,8 +117,10 @@ class DocumentScene extends React.Component<Props> {
 
   @keydown('esc')
   goBack(ev) {
-    ev.preventDefault();
-    this.props.history.goBack();
+    if (this.isEditing) {
+      ev.preventDefault();
+      this.props.history.goBack();
+    }
   }
 
   @keydown('h')
@@ -137,9 +139,9 @@ class DocumentScene extends React.Component<Props> {
     if (props.newDocument) {
       this.document = new Document(
         {
-          collection: { id: props.match.params.id },
-          parentDocument: new URLSearchParams(props.location.search).get(
-            'parentDocument'
+          collectionId: props.match.params.id,
+          parentDocumentId: new URLSearchParams(props.location.search).get(
+            'parentDocumentId'
           ),
           title: '',
           text: '',

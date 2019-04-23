@@ -1,6 +1,6 @@
 /* eslint-disable flowtype/require-valid-file-annotation */
 import TestServer from 'fetch-test-server';
-import app from '..';
+import app from '../app';
 import { Document, View, Star, Revision } from '../models';
 import { flushdb, seed } from '../test/support';
 import {
@@ -79,7 +79,6 @@ describe('#documents.info', async () => {
 
     expect(res.status).toEqual(200);
     expect(body.data.id).toEqual(document.id);
-    expect(body.data.collection).toEqual(undefined);
     expect(body.data.createdBy).toEqual(undefined);
     expect(body.data.updatedBy).toEqual(undefined);
   });
@@ -113,7 +112,7 @@ describe('#documents.info', async () => {
   });
 
   it('should return document from shareId with token', async () => {
-    const { user, document, collection } = await seed();
+    const { user, document } = await seed();
     const share = await buildShare({
       documentId: document.id,
       teamId: document.teamId,
@@ -126,7 +125,6 @@ describe('#documents.info', async () => {
 
     expect(res.status).toEqual(200);
     expect(body.data.id).toEqual(document.id);
-    expect(body.data.collection.id).toEqual(collection.id);
     expect(body.data.createdBy.id).toEqual(user.id);
     expect(body.data.updatedBy.id).toEqual(user.id);
   });
@@ -412,7 +410,7 @@ describe('#documents.search', async () => {
 
   it('should return draft documents created by user', async () => {
     const { user } = await seed();
-    await buildDocument({
+    const document = await buildDocument({
       title: 'search term',
       text: 'search term',
       publishedAt: null,
@@ -426,7 +424,7 @@ describe('#documents.search', async () => {
 
     expect(res.status).toEqual(200);
     expect(body.data.length).toEqual(1);
-    expect(body.data[0].document.text).toEqual('search term');
+    expect(body.data[0].document.id).toEqual(document.id);
   });
 
   it('should not return draft documents created by other users', async () => {
@@ -484,7 +482,70 @@ describe('#documents.search', async () => {
 
     expect(res.status).toEqual(200);
     expect(body.data.length).toEqual(1);
-    expect(body.data[0].document.text).toEqual('search term');
+    expect(body.data[0].document.id).toEqual(document.id);
+  });
+
+  it('should return documents for a specific user', async () => {
+    const { user } = await seed();
+
+    const document = await buildDocument({
+      title: 'search term',
+      text: 'search term',
+      teamId: user.teamId,
+      userId: user.id,
+    });
+
+    // This one will be filtered out
+    await buildDocument({
+      title: 'search term',
+      text: 'search term',
+      teamId: user.teamId,
+    });
+
+    const res = await server.post('/api/documents.search', {
+      body: {
+        token: user.getJwtToken(),
+        query: 'search term',
+        userId: user.id,
+      },
+    });
+    const body = await res.json();
+
+    expect(res.status).toEqual(200);
+    expect(body.data.length).toEqual(1);
+    expect(body.data[0].document.id).toEqual(document.id);
+  });
+
+  it('should return documents for a specific collection', async () => {
+    const { user } = await seed();
+    const collection = await buildCollection();
+
+    const document = await buildDocument({
+      title: 'search term',
+      text: 'search term',
+      teamId: user.teamId,
+    });
+
+    // This one will be filtered out
+    await buildDocument({
+      title: 'search term',
+      text: 'search term',
+      teamId: user.teamId,
+      collectionId: collection.id,
+    });
+
+    const res = await server.post('/api/documents.search', {
+      body: {
+        token: user.getJwtToken(),
+        query: 'search term',
+        collectionId: document.collectionId,
+      },
+    });
+    const body = await res.json();
+
+    expect(res.status).toEqual(200);
+    expect(body.data.length).toEqual(1);
+    expect(body.data[0].document.id).toEqual(document.id);
   });
 
   it('should not return documents in private collections not a member of', async () => {
@@ -505,6 +566,20 @@ describe('#documents.search', async () => {
 
     expect(res.status).toEqual(200);
     expect(body.data.length).toEqual(0);
+  });
+
+  it('should not allow unknown dateFilter values', async () => {
+    const { user } = await seed();
+
+    const res = await server.post('/api/documents.search', {
+      body: {
+        token: user.getJwtToken(),
+        query: 'search term',
+        dateFilter: 'DROP TABLE students;',
+      },
+    });
+
+    expect(res.status).toEqual(400);
   });
 
   it('should require authentication', async () => {
@@ -892,7 +967,7 @@ describe('#documents.create', async () => {
     const res = await server.post('/api/documents.create', {
       body: {
         token: user.getJwtToken(),
-        collection: collection.id,
+        collectionId: collection.id,
         title: 'new document',
         text: 'hello',
         publish: true,
@@ -910,7 +985,7 @@ describe('#documents.create', async () => {
     const res = await server.post('/api/documents.create', {
       body: {
         token: user.getJwtToken(),
-        collection: collection.id,
+        collectionId: collection.id,
         title: ' ',
         text: ' ',
       },
@@ -926,7 +1001,7 @@ describe('#documents.create', async () => {
     const res = await server.post('/api/documents.create', {
       body: {
         token: user.getJwtToken(),
-        collection: collection.id,
+        collectionId: collection.id,
         title:
           'This is a really long title that is not acceptable to Outline because it is so ridiculously long that we need to have a limit somewhere',
         text: ' ',
@@ -940,10 +1015,10 @@ describe('#documents.create', async () => {
     const res = await server.post('/api/documents.create', {
       body: {
         token: user.getJwtToken(),
-        collection: collection.id,
+        collectionId: collection.id,
+        parentDocumentId: document.id,
         title: 'new document',
         text: 'hello',
-        parentDocument: document.id,
         publish: true,
       },
     });
@@ -951,8 +1026,6 @@ describe('#documents.create', async () => {
 
     expect(res.status).toEqual(200);
     expect(body.data.title).toBe('new document');
-    expect(body.data.collection.documents.length).toBe(2);
-    expect(body.data.collection.documents[0].children[0].id).toBe(body.data.id);
   });
 
   it('should error with invalid parentDocument', async () => {
@@ -960,10 +1033,10 @@ describe('#documents.create', async () => {
     const res = await server.post('/api/documents.create', {
       body: {
         token: user.getJwtToken(),
-        collection: collection.id,
+        collectionId: collection.id,
+        parentDocumentId: 'd7a4eb73-fac1-4028-af45-d7e34d54db8e',
         title: 'new document',
         text: 'hello',
-        parentDocument: 'd7a4eb73-fac1-4028-af45-d7e34d54db8e',
       },
     });
     const body = await res.json();
@@ -977,17 +1050,16 @@ describe('#documents.create', async () => {
     const res = await server.post('/api/documents.create', {
       body: {
         token: user.getJwtToken(),
-        collection: collection.id,
+        collectionId: collection.id,
+        parentDocumentId: document.id,
         title: 'new document',
         text: 'hello',
-        parentDocument: document.id,
       },
     });
     const body = await res.json();
 
     expect(res.status).toEqual(200);
     expect(body.data.title).toBe('new document');
-    expect(body.data.collection.documents.length).toBe(2);
   });
 });
 
@@ -1009,7 +1081,6 @@ describe('#documents.update', async () => {
     expect(res.status).toEqual(200);
     expect(body.data.title).toBe('Updated title');
     expect(body.data.text).toBe('Updated text');
-    expect(body.data.collection.documents[0].title).toBe('Updated title');
   });
 
   it('should not edit archived document', async () => {
@@ -1070,7 +1141,6 @@ describe('#documents.update', async () => {
     expect(res.status).toEqual(200);
     expect(body.data.title).toBe('Untitled document');
     expect(body.data.text).toBe('# Untitled document');
-    expect(body.data.collection.documents[0].title).toBe('Untitled document');
   });
 
   it('should fail if document lastRevision does not match', async () => {
@@ -1121,9 +1191,6 @@ describe('#documents.update', async () => {
 
     expect(res.status).toEqual(200);
     expect(body.data.title).toBe('Updated title');
-    expect(body.data.collection.documents[0].children[1].title).toBe(
-      'Updated title'
-    );
   });
 
   it('should require authentication', async () => {
