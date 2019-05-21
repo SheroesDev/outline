@@ -31,7 +31,7 @@ services:
     ports:
       - "3010:3010"
     volumes:
-      - .:/opt/outline:cached
+      - .:/opt/outline
     depends_on:
 #      - postgres
       - redis
