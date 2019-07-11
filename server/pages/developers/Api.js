@@ -219,6 +219,11 @@ export default function Api() {
                 id="collection"
                 description="Collection ID to filter by"
               />
+              <Argument id="user" description="User ID to filter by" />
+              <Argument
+                id="backlinkDocumentId"
+                description="Backlinked document ID to filter by"
+              />
             </Arguments>
           </Method>
 
@@ -284,11 +289,7 @@ export default function Api() {
                 }
                 required
               />
-              <Argument
-                id="title"
-                description="Title for the document"
-                required
-              />
+              <Argument id="title" description="Title for the document" />
               <Argument
                 id="text"
                 description="Content of the document in Markdow"
