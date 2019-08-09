@@ -6,7 +6,7 @@ import breakpoint from 'styled-components-breakpoint';
 import { observable } from 'mobx';
 import { observer, inject } from 'mobx-react';
 import { Prompt, Route, withRouter } from 'react-router-dom';
-import type { Location } from 'react-router-dom';
+import type { Location, RouterHistory } from 'react-router-dom';
 import keydown from 'react-keydown';
 import Flex from 'shared/components/Flex';
 import {
@@ -22,6 +22,7 @@ import { emojiToUrl } from 'utils/emoji';
 import Header from './components/Header';
 import DocumentMove from './components/DocumentMove';
 import Branding from './components/Branding';
+import KeyboardShortcuts from './components/KeyboardShortcuts';
 import Backlinks from './components/Backlinks';
 import ErrorBoundary from 'components/ErrorBoundary';
 import LoadingPlaceholder from 'components/LoadingPlaceholder';
@@ -58,7 +59,7 @@ Are you sure you want to discard them?
 
 type Props = {
   match: Object,
-  history: Object,
+  history: RouterHistory,
   location: Location,
   documents: DocumentsStore,
   revisions: RevisionsStore,
@@ -426,7 +427,7 @@ class DocumentScene extends React.Component<Props> {
             </MaxWidth>
           </Container>
         </Container>
-        {isShare && <Branding />}
+        {isShare ? <Branding /> : <KeyboardShortcuts />}
       </ErrorBoundary>
     );
   }

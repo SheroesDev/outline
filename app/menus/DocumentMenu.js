@@ -11,6 +11,7 @@ import AuthStore from 'stores/AuthStore';
 import CollectionStore from 'stores/CollectionsStore';
 import {
   documentMoveUrl,
+  documentEditUrl,
   documentHistoryUrl,
   newDocumentUrl,
 } from 'utils/routeHelpers';
@@ -39,12 +40,12 @@ class DocumentMenu extends React.Component<Props> {
     this.redirectTo = undefined;
   }
 
-  handleNewChild = (ev: SyntheticEvent<*>) => {
+  handleNewChild = (ev: SyntheticEvent<>) => {
     const { document } = this.props;
     this.redirectTo = newDocumentUrl(document.collectionId, document.id);
   };
 
-  handleDelete = (ev: SyntheticEvent<*>) => {
+  handleDelete = (ev: SyntheticEvent<>) => {
     const { document } = this.props;
     this.props.ui.setActiveModal('document-delete', { document });
   };
@@ -53,11 +54,15 @@ class DocumentMenu extends React.Component<Props> {
     this.redirectTo = documentHistoryUrl(this.props.document);
   };
 
-  handleMove = (ev: SyntheticEvent<*>) => {
+  handleMove = (ev: SyntheticEvent<>) => {
     this.redirectTo = documentMoveUrl(this.props.document);
   };
 
-  handleDuplicate = async (ev: SyntheticEvent<*>) => {
+  handleEdit = (ev: SyntheticEvent<>) => {
+    this.redirectTo = documentEditUrl(this.props.document);
+  };
+
+  handleDuplicate = async (ev: SyntheticEvent<>) => {
     const duped = await this.props.document.duplicate();
 
     // when duplicating, go straight to the duplicated document content
@@ -65,37 +70,37 @@ class DocumentMenu extends React.Component<Props> {
     this.props.ui.showToast('Document duplicated');
   };
 
-  handleArchive = async (ev: SyntheticEvent<*>) => {
+  handleArchive = async (ev: SyntheticEvent<>) => {
     await this.props.document.archive();
     this.props.ui.showToast('Document archived');
   };
 
-  handleRestore = async (ev: SyntheticEvent<*>) => {
+  handleRestore = async (ev: SyntheticEvent<>) => {
     await this.props.document.restore();
     this.props.ui.showToast('Document restored');
   };
 
-  handlePin = (ev: SyntheticEvent<*>) => {
+  handlePin = (ev: SyntheticEvent<>) => {
     this.props.document.pin();
   };
 
-  handleUnpin = (ev: SyntheticEvent<*>) => {
+  handleUnpin = (ev: SyntheticEvent<>) => {
     this.props.document.unpin();
   };
 
-  handleStar = (ev: SyntheticEvent<*>) => {
+  handleStar = (ev: SyntheticEvent<>) => {
     this.props.document.star();
   };
 
-  handleUnstar = (ev: SyntheticEvent<*>) => {
+  handleUnstar = (ev: SyntheticEvent<>) => {
     this.props.document.unstar();
   };
 
-  handleExport = (ev: SyntheticEvent<*>) => {
+  handleExport = (ev: SyntheticEvent<>) => {
     this.props.document.download();
   };
 
-  handleShareLink = async (ev: SyntheticEvent<*>) => {
+  handleShareLink = async (ev: SyntheticEvent<>) => {
     const { document } = this.props;
     if (!document.shareUrl) await document.share();
 
@@ -178,6 +183,7 @@ class DocumentMenu extends React.Component<Props> {
             >
               New child document
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={this.handleEdit}>Edit</DropdownMenuItem>
             <DropdownMenuItem onClick={this.handleDuplicate}>
               Duplicate
             </DropdownMenuItem>

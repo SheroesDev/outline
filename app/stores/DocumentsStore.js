@@ -49,7 +49,7 @@ export default class DocumentsStore extends BaseStore<Document> {
     return orderBy(this.all, 'updatedAt', 'desc');
   }
 
-  createdByUser(userId: string): * {
+  createdByUser(userId: string): Document[] {
     return orderBy(
       filter(this.all, d => d.createdBy.id === userId),
       'updatedAt',
@@ -354,7 +354,7 @@ export default class DocumentsStore extends BaseStore<Document> {
     const res = await client.post('/documents.create', {
       publish: true,
       parentDocumentId: document.parentDocumentId,
-      collection: document.collectionId,
+      collectionId: document.collectionId,
       title: `${document.title} (duplicate)`,
       text: document.text,
     });
@@ -387,7 +387,12 @@ export default class DocumentsStore extends BaseStore<Document> {
   }
 
   @action
-  async update(params: *) {
+  async update(params: {
+    id: string,
+    title: string,
+    text: string,
+    lastRevision: number,
+  }) {
     const document = await super.update(params);
 
     // Because the collection object contains the url and title

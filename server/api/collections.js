@@ -1,13 +1,14 @@
 // @flow
+import fs from 'fs';
 import Router from 'koa-router';
 import auth from '../middlewares/authentication';
 import pagination from './middlewares/pagination';
 import { presentCollection, presentUser } from '../presenters';
-import { Collection, CollectionUser, Team, User } from '../models';
+import { Collection, CollectionUser, Team, Event, User } from '../models';
 import { ValidationError, InvalidRequestError } from '../errors';
-import { exportCollection, exportCollections } from '../logistics';
+import { exportCollections } from '../logistics';
+import { archiveCollection } from '../utils/zip';
 import policy from '../policies';
-import events from '../events';
 
 const { authorize } = policy;
 const router = new Router();
@@ -33,11 +34,13 @@ router.post('collections.create', auth(), async ctx => {
     private: isPrivate,
   });
 
-  events.add({
+  await Event.create({
     name: 'collections.create',
-    modelId: collection.id,
+    collectionId: collection.id,
     teamId: collection.teamId,
     actorId: user.id,
+    data: { name },
+    ip: ctx.request.ip,
   });
 
   ctx.body = {
@@ -79,12 +82,14 @@ router.post('collections.add_user', auth(), async ctx => {
     createdById: ctx.state.user.id,
   });
 
-  events.add({
+  await Event.create({
     name: 'collections.add_user',
-    modelId: userId,
+    userId,
     collectionId: collection.id,
     teamId: collection.teamId,
     actorId: ctx.state.user.id,
+    data: { name: user.name },
+    ip: ctx.request.ip,
   });
 
   ctx.body = {
@@ -109,12 +114,14 @@ router.post('collections.remove_user', auth(), async ctx => {
 
   await collection.removeUser(user);
 
-  events.add({
+  await Event.create({
     name: 'collections.remove_user',
-    modelId: userId,
+    userId,
     collectionId: collection.id,
     teamId: collection.teamId,
     actorId: ctx.state.user.id,
+    data: { name: user.name },
+    ip: ctx.request.ip,
   });
 
   ctx.body = {
@@ -144,12 +151,20 @@ router.post('collections.export', auth(), async ctx => {
   const collection = await Collection.findByPk(id);
   authorize(user, 'export', collection);
 
-  // async operation to create zip archive and email user
-  exportCollection(id, user.email);
+  const filePath = await archiveCollection(collection);
 
-  ctx.body = {
-    success: true,
-  };
+  await Event.create({
+    name: 'collections.export',
+    collectionId: collection.id,
+    teamId: user.teamId,
+    actorId: user.id,
+    data: { title: collection.title },
+    ip: ctx.request.ip,
+  });
+
+  ctx.attachment(`${collection.name}.zip`);
+  ctx.set('Content-Type', 'application/force-download');
+  ctx.body = fs.createReadStream(filePath);
 });
 
 router.post('collections.exportAll', auth(), async ctx => {
@@ -159,6 +174,13 @@ router.post('collections.exportAll', auth(), async ctx => {
 
   // async operation to create zip archive and email user
   exportCollections(user.teamId, user.email);
+
+  await Event.create({
+    name: 'collections.export',
+    teamId: user.teamId,
+    actorId: user.id,
+    ip: ctx.request.ip,
+  });
 
   ctx.body = {
     success: true,
@@ -196,11 +218,13 @@ router.post('collections.update', auth(), async ctx => {
   collection.private = isPrivate;
   await collection.save();
 
-  events.add({
+  await Event.create({
     name: 'collections.update',
-    modelId: collection.id,
+    collectionId: collection.id,
     teamId: collection.teamId,
     actorId: user.id,
+    data: { name },
+    ip: ctx.request.ip,
   });
 
   ctx.body = {
@@ -245,11 +269,13 @@ router.post('collections.delete', auth(), async ctx => {
 
   await collection.destroy();
 
-  events.add({
+  await Event.create({
     name: 'collections.delete',
-    modelId: collection.id,
+    collectionId: collection.id,
     teamId: collection.teamId,
     actorId: user.id,
+    data: { name: collection.name },
+    ip: ctx.request.ip,
   });
 
   ctx.body = {

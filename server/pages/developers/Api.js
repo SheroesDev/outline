@@ -24,6 +24,16 @@ export default function Api() {
             <Arguments />
           </Method>
 
+          <Method method="events.list" label="List team's events">
+            <Description>List all of the events in the team.</Description>
+            <Arguments pagination>
+              <Argument
+                id="auditLog"
+                description="Boolean. If user token has access, return auditing events"
+              />
+            </Arguments>
+          </Method>
+
           <Method method="users.list" label="List team's users">
             <Description>List all of the users in the team.</Description>
             <Arguments pagination />
@@ -125,7 +135,7 @@ export default function Api() {
             <Arguments pagination />
           </Method>
 
-          <Method method="collections.info" label="Get a document collection">
+          <Method method="collections.info" label="Get a collection">
             <Description>
               Returns detailed information on a document collection.
             </Description>
@@ -145,6 +155,17 @@ export default function Api() {
                 id="description"
                 description="Short description for the collection"
               />
+            </Arguments>
+          </Method>
+
+          <Method method="collections.export" label="Export a collection">
+            <Description>
+              Returns a zip file of all the collections documents in markdown
+              format. If documents are nested then they will be nested in
+              folders inside the zip file.
+            </Description>
+            <Arguments>
+              <Argument id="id" description="Collection id" required />
             </Arguments>
           </Method>
 

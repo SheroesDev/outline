@@ -1,6 +1,7 @@
 // @flow
 import * as React from 'react';
 import { observer, inject } from 'mobx-react';
+import type { RouterHistory } from 'react-router-dom';
 import {
   DocumentIcon,
   EmailIcon,
@@ -10,6 +11,7 @@ import {
   UserIcon,
   LinkIcon,
   TeamIcon,
+  BulletedListIcon,
 } from 'outline-icons';
 import ZapierIcon from './icons/Zapier';
 import SlackIcon from './icons/Slack';
@@ -24,7 +26,7 @@ import HeaderBlock from './components/HeaderBlock';
 import AuthStore from 'stores/AuthStore';
 
 type Props = {
-  history: Object,
+  history: RouterHistory,
   auth: AuthStore,
 };
 
@@ -94,6 +96,13 @@ class SettingsSidebar extends React.Component<Props> {
                 icon={<LinkIcon />}
                 label="Share Links"
               />
+              {user.isAdmin && (
+                <SidebarLink
+                  to="/settings/events"
+                  icon={<BulletedListIcon />}
+                  label="Audit Log"
+                />
+              )}
               {user.isAdmin && (
                 <SidebarLink
                   to="/settings/export"
