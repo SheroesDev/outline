@@ -3,7 +3,6 @@ import * as React from 'react';
 import { Redirect } from 'react-router-dom';
 import { inject, observer } from 'mobx-react';
 import { observable } from 'mobx';
-import { MoreIcon } from 'outline-icons';
 
 import CopyToClipboard from 'components/CopyToClipboard';
 import { DropdownMenu, DropdownMenuItem } from 'components/DropdownMenu';
@@ -12,7 +11,6 @@ import UiStore from 'stores/UiStore';
 import Share from 'models/Share';
 
 type Props = {
-  label?: React.Node,
   onOpen?: () => void,
   onClose: () => void,
   shares: SharesStore,
@@ -46,14 +44,10 @@ class ShareMenu extends React.Component<Props> {
   render() {
     if (this.redirectTo) return <Redirect to={this.redirectTo} push />;
 
-    const { share, label, onOpen, onClose } = this.props;
+    const { share, onOpen, onClose } = this.props;
 
     return (
-      <DropdownMenu
-        label={label || <MoreIcon />}
-        onOpen={onOpen}
-        onClose={onClose}
-      >
+      <DropdownMenu onOpen={onOpen} onClose={onClose}>
         <CopyToClipboard text={share.url} onCopy={this.handleCopy}>
           <DropdownMenuItem>Copy link</DropdownMenuItem>
         </CopyToClipboard>

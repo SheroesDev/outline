@@ -17,7 +17,7 @@ import Revision from './Revision';
 const Op = Sequelize.Op;
 const Markdown = new MarkdownSerializer();
 const URL_REGEX = /^[a-zA-Z0-9-]*-([a-zA-Z0-9]{10,15})$/;
-const DEFAULT_TITLE = 'Untitled document';
+const DEFAULT_TITLE = 'Untitled';
 
 slug.defaults.mode = 'rfc3986';
 const slugify = text =>
@@ -55,10 +55,9 @@ const beforeSave = async doc => {
   // emoji in the title is split out for easier display
   doc.emoji = emoji;
 
-  // ensure document has a title
+  // ensure documents have a title
   if (!title) {
     doc.title = DEFAULT_TITLE;
-    doc.text = doc.text.replace(/^.*$/m, `# ${DEFAULT_TITLE}`);
   }
 
   // add the current user as a collaborator on this doc
@@ -155,25 +154,43 @@ Document.associate = models => {
   Document.hasMany(models.View, {
     as: 'views',
   });
-  Document.addScope(
-    'defaultScope',
-    {
-      include: [
-        { model: models.Collection, as: 'collection' },
-        { model: models.User, as: 'createdBy', paranoid: false },
-        { model: models.User, as: 'updatedBy', paranoid: false },
-      ],
-      where: {
-        publishedAt: {
-          [Op.ne]: null,
-        },
+  Document.addScope('defaultScope', {
+    include: [
+      { model: models.User, as: 'createdBy', paranoid: false },
+      { model: models.User, as: 'updatedBy', paranoid: false },
+    ],
+    where: {
+      publishedAt: {
+        [Op.ne]: null,
       },
     },
-    { override: true }
-  );
+  });
+  Document.addScope('withCollection', userId => {
+    if (userId) {
+      return {
+        include: [
+          {
+            model: models.Collection,
+            as: 'collection',
+            include: [
+              {
+                model: models.CollectionUser,
+                as: 'memberships',
+                where: { userId },
+                required: false,
+              },
+            ],
+          },
+        ],
+      };
+    }
+
+    return {
+      include: [{ model: models.Collection, as: 'collection' }],
+    };
+  });
   Document.addScope('withUnpublished', {
     include: [
-      { model: models.Collection, as: 'collection' },
       { model: models.User, as: 'createdBy', paranoid: false },
       { model: models.User, as: 'updatedBy', paranoid: false },
     ],
@@ -190,8 +207,12 @@ Document.associate = models => {
   }));
 };
 
-Document.findByPk = async (id, options) => {
-  const scope = Document.scope('withUnpublished');
+Document.findByPk = async function(id, options = {}) {
+  // allow default preloading of collection membership if `userId` is passed in find options
+  // almost every endpoint needs the collection membership to determine policy permissions.
+  const scope = this.scope('withUnpublished', {
+    method: ['withCollection', options.userId],
+  });
 
   if (isUUID(id)) {
     return scope.findOne({
@@ -214,10 +235,80 @@ type SearchResult = {
   document: Document,
 };
 
+type SearchOptions = {
+  limit?: number,
+  offset?: number,
+  collectionId?: string,
+  dateFilter?: 'day' | 'week' | 'month' | 'year',
+  collaboratorIds?: string[],
+  includeArchived?: boolean,
+};
+
+Document.searchForTeam = async (
+  team,
+  query,
+  options: SearchOptions = {}
+): Promise<SearchResult[]> => {
+  const limit = options.limit || 15;
+  const offset = options.offset || 0;
+  const wildcardQuery = `${sequelize.escape(query)}:*`;
+  const collectionIds = await team.collectionIds();
+
+  // Build the SQL query to get documentIds, ranking, and search term context
+  const sql = `
+    SELECT
+      id,
+      ts_rank(documents."searchVector", to_tsquery('english', :query)) as "searchRanking",
+      ts_headline('english', "text", to_tsquery('english', :query), 'MaxFragments=1, MinWords=20, MaxWords=30') as "searchContext"
+    FROM documents
+    WHERE "searchVector" @@ to_tsquery('english', :query) AND
+      "teamId" = :teamId AND
+      "collectionId" IN(:collectionIds) AND
+      "deletedAt" IS NULL AND
+      "publishedAt" IS NOT NULL
+    ORDER BY 
+      "searchRanking" DESC,
+      "updatedAt" DESC
+    LIMIT :limit
+    OFFSET :offset;
+  `;
+
+  const results = await sequelize.query(sql, {
+    type: sequelize.QueryTypes.SELECT,
+    replacements: {
+      teamId: team.id,
+      query: wildcardQuery,
+      limit,
+      offset,
+      collectionIds,
+    },
+  });
+
+  // Final query to get associated document data
+  const documents = await Document.findAll({
+    where: {
+      id: map(results, 'id'),
+    },
+    include: [
+      { model: Collection, as: 'collection' },
+      { model: User, as: 'createdBy', paranoid: false },
+      { model: User, as: 'updatedBy', paranoid: false },
+    ],
+  });
+
+  return map(results, result => ({
+    ranking: result.searchRanking,
+    context: removeMarkdown(unescape(result.searchContext), {
+      stripHTML: false,
+    }),
+    document: find(documents, { id: result.id }),
+  }));
+};
+
 Document.searchForUser = async (
   user,
   query,
-  options = {}
+  options: SearchOptions = {}
 ): Promise<SearchResult[]> => {
   const limit = options.limit || 15;
   const offset = options.offset || 0;
@@ -281,14 +372,18 @@ Document.searchForUser = async (
   });
 
   // Final query to get associated document data
-  const documents = await Document.scope({
-    method: ['withViews', user.id],
-  }).findAll({
+  const documents = await Document.scope(
+    {
+      method: ['withViews', user.id],
+    },
+    {
+      method: ['withCollection', user.id],
+    }
+  ).findAll({
     where: {
       id: map(results, 'id'),
     },
     include: [
-      { model: Collection, as: 'collection' },
       { model: User, as: 'createdBy', paranoid: false },
       { model: User, as: 'updatedBy', paranoid: false },
     ],
@@ -381,7 +476,6 @@ Document.prototype.publish = async function(options) {
 
   this.publishedAt = new Date();
   await this.save(options);
-  this.collection = collection;
 
   return this;
 };

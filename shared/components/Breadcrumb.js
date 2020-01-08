@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import {
   CollectionIcon,
   PrivateCollectionIcon,
+  PadlockIcon,
   GoToIcon,
   MoreIcon,
 } from 'outline-icons';
@@ -25,13 +26,18 @@ type Props = {
 
 const Breadcrumb = observer(({ document, collections, onlyText }: Props) => {
   const collection = collections.get(document.collectionId);
-  if (!collection) return null;
+  if (!collection) return <div />;
 
   const path = collection.pathToDocument(document).slice(0, -1);
 
   if (onlyText === true) {
     return (
       <React.Fragment>
+        {collection.private && (
+          <React.Fragment>
+            <SmallPadlockIcon color="currentColor" size={16} />{' '}
+          </React.Fragment>
+        )}
         {collection.name}
         {path.map(n => (
           <React.Fragment key={n.id}>
@@ -81,6 +87,11 @@ const Wrapper = styled(Flex)`
   ${breakpoint('tablet')`	
     display: flex;
   `};
+`;
+
+const SmallPadlockIcon = styled(PadlockIcon)`
+  display: inline-block;
+  vertical-align: sub;
 `;
 
 const SmallSlash = styled(GoToIcon)`

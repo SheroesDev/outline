@@ -59,15 +59,44 @@ export default class UsersStore extends BaseStore<User> {
     return res.data;
   };
 
+  notInCollection = (collectionId: string, query: string = '') => {
+    const memberships = filter(
+      this.rootStore.memberships.orderedData,
+      member => member.collectionId === collectionId
+    );
+    const userIds = memberships.map(member => member.userId);
+    const users = filter(this.orderedData, user => !userIds.includes(user.id));
+    if (!query) return users;
+
+    return filter(users, user =>
+      user.name.toLowerCase().match(query.toLowerCase())
+    );
+  };
+
+  inCollection = (collectionId: string, query: string) => {
+    const memberships = filter(
+      this.rootStore.memberships.orderedData,
+      member => member.collectionId === collectionId
+    );
+    const userIds = memberships.map(member => member.userId);
+    const users = filter(this.orderedData, user => userIds.includes(user.id));
+
+    if (!query) return users;
+
+    return filter(users, user =>
+      user.name.toLowerCase().match(query.toLowerCase())
+    );
+  };
+
   actionOnUser = async (action: string, user: User) => {
     const res = await client.post(`/users.${action}`, {
       id: user.id,
     });
     invariant(res && res.data, 'Data should be available');
-    const { data } = res;
 
     runInAction(`UsersStore#${action}`, () => {
-      this.add(data);
+      this.addPolicies(res.policies);
+      this.add(res.data);
     });
   };
 }

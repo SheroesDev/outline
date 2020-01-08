@@ -52,7 +52,11 @@ class Editor extends React.Component<Props> {
         }
       }
 
-      this.redirectTo = navigateTo;
+      // protect against redirecting back to the same place
+      const currentLocation = window.location.pathname + window.location.hash;
+      if (currentLocation !== navigateTo) {
+        this.redirectTo = navigateTo;
+      }
     } else {
       window.open(href, '_blank');
     }
@@ -272,8 +276,10 @@ const PrismStyles = createGlobalStyle`
   }
 `;
 
-const EditorTooltip = props => (
-  <Tooltip offset="0, 16" delay={150} {...props} />
+const EditorTooltip = ({ children, ...props }) => (
+  <Tooltip offset="0, 16" delay={150} {...props}>
+    <span>{children}</span>
+  </Tooltip>
 );
 
 export default withTheme(

@@ -13,11 +13,13 @@ import CollectionLink from './CollectionLink';
 import Fade from 'components/Fade';
 
 import CollectionsStore from 'stores/CollectionsStore';
+import PoliciesStore from 'stores/PoliciesStore';
 import UiStore from 'stores/UiStore';
 import DocumentsStore from 'stores/DocumentsStore';
 
 type Props = {
   history: RouterHistory,
+  policies: PoliciesStore,
   collections: CollectionsStore,
   documents: DocumentsStore,
   onCreateCollection: () => void,
@@ -29,13 +31,20 @@ class Collections extends React.Component<Props> {
   isPreloaded: boolean = !!this.props.collections.orderedData.length;
 
   componentDidMount() {
-    this.props.collections.fetchPage({ limit: 100 });
+    const { collections } = this.props;
+
+    if (!collections.isFetching && !collections.isLoaded) {
+      collections.fetchPage({ limit: 100 });
+    }
   }
 
   @keydown('n')
   goToNewDocument() {
     const { activeCollectionId } = this.props.ui;
     if (!activeCollectionId) return;
+
+    const can = this.props.policies.abilities(activeCollectionId);
+    if (!can.update) return;
 
     this.props.history.push(newDocumentUrl(activeCollectionId));
   }
@@ -71,6 +80,6 @@ class Collections extends React.Component<Props> {
   }
 }
 
-export default inject('collections', 'ui', 'documents')(
+export default inject('collections', 'ui', 'documents', 'policies')(
   withRouter(Collections)
 );

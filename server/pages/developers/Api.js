@@ -169,6 +169,21 @@ export default function Api() {
             </Arguments>
           </Method>
 
+          <Method method="collections.exportAll" label="Export all collections">
+            <Description>
+              Returns a zip file of all the collections or creates an async job
+              to send a zip file via email to the authenticated user. If
+              documents are nested then they will be nested in folders inside
+              the zip file.
+            </Description>
+            <Arguments>
+              <Argument
+                id="download"
+                description="Download as zip (default is email)"
+              />
+            </Arguments>
+          </Method>
+
           <Method method="collections.update" label="Update a collection">
             <Description>
               This method allows you to modify an already created collection.
@@ -213,13 +228,22 @@ export default function Api() {
             </Arguments>
           </Method>
 
-          <Method method="collections.users" label="List collection members">
+          <Method
+            method="collections.memberships"
+            label="List collection members"
+          >
             <Description>
-              This method allows you to list users with access to a private
-              collection.
+              This method allows you to list a collections memberships. This is
+              both a collections maintainers, and user permissions for read and
+              write if the collection is private
             </Description>
-            <Arguments>
+            <Arguments pagination>
               <Argument id="id" description="Collection ID" required />
+              <Argument id="query" description="Filter results by user name" />
+              <Argument
+                id="permission"
+                description="Filter results by permission"
+              />
             </Arguments>
           </Method>
 
@@ -555,7 +579,13 @@ export default function Api() {
             label="Get pinned documents for a collection"
           >
             <Description>Return pinned documents for a collection</Description>
-            <Arguments pagination />
+            <Arguments pagination>
+              <Argument
+                id="collectionId"
+                description="Collection ID"
+                required
+              />
+            </Arguments>
           </Method>
 
           <Method
