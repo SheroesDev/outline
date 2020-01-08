@@ -1,5 +1,6 @@
 // @flow
 import { action, set, computed } from 'mobx';
+import addDays from 'date-fns/add_days';
 import invariant from 'invariant';
 import { client } from 'utils/ApiClient';
 import parseTitle from 'shared/utils/parseTitle';
@@ -52,6 +53,19 @@ export default class Document extends BaseModel {
   }
 
   @computed
+  get isOnlyTitle(): boolean {
+    const { title } = parseTitle(this.text);
+
+    // find and extract title
+    const trimmedBody = this.text
+      .trim()
+      .replace(/^#/, '')
+      .trim();
+
+    return unescape(trimmedBody) === title;
+  }
+
+  @computed
   get modifiedSinceViewed(): boolean {
     return !!this.lastViewedAt && this.lastViewedAt < this.updatedAt;
   }
@@ -74,6 +88,15 @@ export default class Document extends BaseModel {
   @computed
   get isDraft(): boolean {
     return !this.publishedAt;
+  }
+
+  @computed
+  get permanentlyDeletedAt(): ?string {
+    if (!this.deletedAt) {
+      return undefined;
+    }
+
+    return addDays(new Date(this.deletedAt), 30).toString();
   }
 
   @action

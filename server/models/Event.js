@@ -56,11 +56,14 @@ Event.ACTIVITY_EVENTS = [
   'documents.pin',
   'documents.unpin',
   'documents.delete',
+  'documents.restore',
   'collections.create',
   'collections.delete',
 ];
 
 Event.AUDIT_EVENTS = [
+  'api_keys.create',
+  'api_keys.delete',
   'users.create',
   'users.promote',
   'users.demote',

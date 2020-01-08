@@ -4,10 +4,10 @@ import Editor from 'components/Editor';
 import ClickablePadding from 'components/ClickablePadding';
 import plugins from './plugins';
 
-type Props = {
+type Props = {|
   defaultValue?: string,
   readOnly?: boolean,
-};
+|};
 
 class DocumentEditor extends React.Component<Props> {
   editor: ?Editor;
@@ -34,12 +34,10 @@ class DocumentEditor extends React.Component<Props> {
         <Editor
           ref={ref => (this.editor = ref)}
           plugins={plugins}
+          grow={!readOnly}
           {...this.props}
         />
-        <ClickablePadding
-          onClick={!readOnly ? this.focusAtEnd : undefined}
-          grow
-        />
+        {!readOnly && <ClickablePadding onClick={this.focusAtEnd} grow />}
       </React.Fragment>
     );
   }

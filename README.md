@@ -23,7 +23,7 @@ Outline requires the following dependencies:
 
 - Node.js >= 12
 - Postgres >=9.5
-- Redis
+- Redis >= 4
 - AWS S3 storage bucket for media and other attachments
 - Slack or Google developer application for authentication
 
@@ -53,7 +53,7 @@ For a self-hosted production installation there is more flexibility, but these a
    > Requires [Node.js, npm](https://nodejs.org/) and [yarn](https://yarnpkg.com) installed
 
 1. Build the web app with `yarn build:webpack` or `npm run build:webpack`
-1. Copy the file `.env.sample` to `.env` and fill out at least the essential fields:
+1. Using the `.env.sample` as a reference, set the required variables in your production environment. The following are required as a minimum:
     1. `SECRET_KEY` (follow instructions in the comments of `.env`)
     1. `SLACK_KEY` (this is called "Client ID" in Slack admin)
     1. `SLACK_SECRET`
@@ -148,7 +148,7 @@ yarn test:app
 
 Outline is built and maintained by a small team – we'd love your help to fix bugs and add features!
 
-However, before working on a pull request please let the core team know by creating or commenting in an issue on [GitHub](https://www.github.com/outline/outline/issues), and we'd also love to hear from you in our [Spectrum community](https://spectrum.chat/outline). This way we can ensure that an approach is agreed on before code is written and will hopefully help to get your contributions integrated faster! Take a look at our [roadmap](https://www.getoutline.com/share/3e6cb2b5-d68b-4ad8-8900-062476820311).
+However, before working on a pull request please let the core team know by creating or commenting in an issue on [GitHub](https://www.github.com/outline/outline/issues), and we'd also love to hear from you in our [Spectrum community](https://spectrum.chat/outline). This way we can ensure that an approach is agreed on before code is written and will hopefully help to get your contributions integrated faster!
 
 If you’re looking for ways to get started, here's a list of ways to help us improve Outline:
 

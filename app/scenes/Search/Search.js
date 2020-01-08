@@ -2,7 +2,7 @@
 import * as React from 'react';
 import ReactDOM from 'react-dom';
 import keydown from 'react-keydown';
-import Waypoint from 'react-waypoint';
+import { Waypoint } from 'react-waypoint';
 import { withRouter, Link } from 'react-router-dom';
 import type { Location, RouterHistory } from 'react-router-dom';
 import { PlusIcon } from 'outline-icons';
@@ -106,7 +106,7 @@ class Search extends React.Component<Props> {
   };
 
   handleTermChange = () => {
-    const query = this.props.match.params.term;
+    const query = decodeURIComponent(this.props.match.params.term || '');
     this.query = query ? query : '';
     this.offset = 0;
     this.allowLoadMore = true;
@@ -188,11 +188,13 @@ class Search extends React.Component<Props> {
           limit: DEFAULT_PAGINATION_LIMIT,
           dateFilter: this.dateFilter,
           includeArchived: this.includeArchived,
+          includeDrafts: true,
           collectionId: this.collectionId,
           userId: this.userId,
         });
 
-        if (results.length > 0) this.pinToTop = true;
+        this.pinToTop = true;
+
         if (results.length === 0 || results.length < DEFAULT_PAGINATION_LIMIT) {
           this.allowLoadMore = false;
         } else {

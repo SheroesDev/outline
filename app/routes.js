@@ -6,6 +6,7 @@ import Dashboard from 'scenes/Dashboard';
 import Starred from 'scenes/Starred';
 import Drafts from 'scenes/Drafts';
 import Archive from 'scenes/Archive';
+import Trash from 'scenes/Trash';
 import Collection from 'scenes/Collection';
 import KeyedDocument from 'scenes/Document/KeyedDocument';
 import DocumentNew from 'scenes/DocumentNew';
@@ -26,7 +27,6 @@ import Error404 from 'scenes/Error404';
 import Layout from 'components/Layout';
 import SocketProvider from 'components/SocketProvider';
 import Authenticated from 'components/Authenticated';
-import RouteSidebarHidden from 'components/RouteSidebarHidden';
 import { matchDocumentSlug as slug } from 'utils/routeHelpers';
 
 const NotFound = () => <Search notFound />;
@@ -49,6 +49,7 @@ export default function Routes() {
               <Route exact path="/starred/:sort" component={Starred} />
               <Route exact path="/drafts" component={Drafts} />
               <Route exact path="/archive" component={Archive} />
+              <Route exact path="/trash" component={Trash} />
               <Route exact path="/settings" component={Settings} />
               <Route exact path="/settings/details" component={Details} />
               <Route exact path="/settings/security" component={Security} />
@@ -73,7 +74,7 @@ export default function Routes() {
                 component={Zapier}
               />
               <Route exact path="/settings/export" component={Export} />
-              <RouteSidebarHidden
+              <Route
                 exact
                 path="/collections/:id/new"
                 component={DocumentNew}
@@ -90,7 +91,7 @@ export default function Routes() {
                 path={`/doc/${slug}/history/:revisionId?`}
                 component={KeyedDocument}
               />
-              <RouteSidebarHidden
+              <Route
                 exact
                 path={`/doc/${slug}/edit`}
                 component={KeyedDocument}

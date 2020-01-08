@@ -15,11 +15,12 @@ import shares from './shares';
 import team from './team';
 import integrations from './integrations';
 import notificationSettings from './notificationSettings';
+import utils from './utils';
 
 import { NotFoundError } from '../errors';
-import errorHandling from './middlewares/errorHandling';
+import errorHandling from '../middlewares/errorHandling';
 import validation from '../middlewares/validation';
-import methodOverride from './middlewares/methodOverride';
+import methodOverride from '../middlewares/methodOverride';
 import cache from './middlewares/cache';
 import apiWrapper from './middlewares/apiWrapper';
 
@@ -47,6 +48,7 @@ router.use('/', shares.routes());
 router.use('/', team.routes());
 router.use('/', integrations.routes());
 router.use('/', notificationSettings.routes());
+router.use('/', utils.routes());
 router.post('*', ctx => {
   ctx.throw(new NotFoundError('Endpoint not found'));
 });
