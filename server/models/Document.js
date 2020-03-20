@@ -16,7 +16,7 @@ import Revision from './Revision';
 
 const Op = Sequelize.Op;
 const Markdown = new MarkdownSerializer();
-const URL_REGEX = /^[a-zA-Z0-9-]*-([a-zA-Z0-9]{10,15})$/;
+const URL_REGEX = /^[0-9a-zA-Z-_~]*-([a-zA-Z0-9]{10,15})$/;
 const DEFAULT_TITLE = 'Untitled';
 
 slug.defaults.mode = 'rfc3986';
@@ -37,6 +37,7 @@ const createRevision = (doc, options = {}) => {
       title: doc.title,
       text: doc.text,
       userId: doc.lastModifiedById,
+      editorVersion: doc.editorVersion,
       documentId: doc.id,
     },
     {
@@ -91,6 +92,7 @@ const Document = sequelize.define(
         },
       },
     },
+    editorVersion: DataTypes.STRING,
     text: DataTypes.TEXT,
     isWelcome: { type: DataTypes.BOOLEAN, defaultValue: false },
     revisionCount: { type: DataTypes.INTEGER, defaultValue: 0 },
@@ -172,16 +174,10 @@ Document.associate = models => {
       return {
         include: [
           {
-            model: models.Collection,
+            model: models.Collection.scope({
+              method: ['withMembership', userId],
+            }),
             as: 'collection',
-            include: [
-              {
-                model: models.CollectionUser,
-                as: 'memberships',
-                where: { userId },
-                required: false,
-              },
-            ],
           },
         ],
       };
@@ -269,7 +265,7 @@ Document.searchForTeam = async (
       "collectionId" IN(:collectionIds) AND
       "deletedAt" IS NULL AND
       "publishedAt" IS NOT NULL
-    ORDER BY 
+    ORDER BY
       "searchRanking" DESC,
       "updatedAt" DESC
     LIMIT :limit
@@ -356,8 +352,8 @@ Document.searchForUser = async (
       options.includeDrafts
         ? '("publishedAt" IS NOT NULL OR "createdById" = :userId)'
         : '"publishedAt" IS NOT NULL'
-    } 
-  ORDER BY 
+    }
+  ORDER BY
     "searchRanking" DESC,
     "updatedAt" DESC
   LIMIT :limit
