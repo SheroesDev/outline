@@ -425,7 +425,7 @@ router.post('documents.revision', auth(), async ctx => {
 
   ctx.body = {
     pagination: ctx.state.pagination,
-    data: presentRevision(revision),
+    data: await presentRevision(revision),
   };
 });
 
@@ -439,15 +439,19 @@ router.post('documents.revisions', auth(), pagination(), async ctx => {
   authorize(user, 'read', document);
 
   const revisions = await Revision.findAll({
-    where: { documentId: id },
+    where: { documentId: document.id },
     order: [[sort, direction]],
     offset: ctx.state.pagination.offset,
     limit: ctx.state.pagination.limit,
   });
 
+  const data = await Promise.all(
+    revisions.map(revision => presentRevision(revision))
+  );
+
   ctx.body = {
     pagination: ctx.state.pagination,
-    data: revisions.map(presentRevision),
+    data,
   };
 });
 

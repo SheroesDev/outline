@@ -10,7 +10,6 @@ import {
   stripSubdomain,
   RESERVED_SUBDOMAINS,
 } from '../../shared/utils/domains';
-import parseTitle from '../../shared/utils/parseTitle';
 import { ValidationError } from '../errors';
 
 import Collection from './Collection';
@@ -142,13 +141,17 @@ Team.prototype.provisionFirstCollection = async function(userId) {
 
   // For the first collection we go ahead and create some intitial documents to get
   // the team started. You can edit these in /server/onboarding/x.md
-  const onboardingDocs = ['support', 'integrations', 'editor', 'philosophy'];
-  for (const name of onboardingDocs) {
+  const onboardingDocs = [
+    '❤️ Support',
+    '🚀 Integrations & API',
+    '📝 Our Editor',
+    '👋 What is Outline',
+  ];
+  for (const title of onboardingDocs) {
     const text = await readFile(
-      path.join(__dirname, '..', 'onboarding', `${name}.md`),
+      path.join(__dirname, '..', 'onboarding', `${title}.md`),
       'utf8'
     );
-    const { title } = parseTitle(text);
     const document = await Document.create({
       isWelcome: true,
       parentDocumentId: null,
