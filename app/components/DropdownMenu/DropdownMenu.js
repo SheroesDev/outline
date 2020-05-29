@@ -23,6 +23,7 @@ type Props = {
   onClose?: () => void,
   children?: Children,
   className?: string,
+  hover?: boolean,
   style?: Object,
   position?: 'left' | 'right' | 'center',
 };
@@ -30,6 +31,7 @@ type Props = {
 @observer
 class DropdownMenu extends React.Component<Props> {
   id: string = `menu${counter++}`;
+  closeTimeout: TimeoutID;
 
   @observable top: ?number;
   @observable bottom: ?number;
@@ -72,7 +74,7 @@ class DropdownMenu extends React.Component<Props> {
         this.initPosition();
 
         // attempt to keep only one flyout menu open at once
-        if (previousClosePortal) {
+        if (previousClosePortal && !this.props.hover) {
           previousClosePortal();
         }
         previousClosePortal = closePortal;
@@ -133,8 +135,21 @@ class DropdownMenu extends React.Component<Props> {
     this.forceUpdate();
   }
 
+  closeAfterTimeout = (closePortal: () => void) => () => {
+    if (this.closeTimeout) {
+      clearTimeout(this.closeTimeout);
+    }
+    this.closeTimeout = setTimeout(closePortal, 500);
+  };
+
+  clearCloseTimeout = () => {
+    if (this.closeTimeout) {
+      clearTimeout(this.closeTimeout);
+    }
+  };
+
   render() {
-    const { className, label, children } = this.props;
+    const { className, hover, label, children } = this.props;
 
     return (
       <div className={className}>
@@ -146,7 +161,18 @@ class DropdownMenu extends React.Component<Props> {
         >
           {({ closePortal, openPortal, isOpen, portal }) => (
             <React.Fragment>
-              <Label onClick={this.handleOpen(openPortal, closePortal)}>
+              <Label
+                onMouseMove={hover ? this.clearCloseTimeout : undefined}
+                onMouseOut={
+                  hover ? this.closeAfterTimeout(closePortal) : undefined
+                }
+                onMouseEnter={
+                  hover ? this.handleOpen(openPortal, closePortal) : undefined
+                }
+                onClick={
+                  hover ? undefined : this.handleOpen(openPortal, closePortal)
+                }
+              >
                 {label || (
                   <NudeButton
                     id={`${this.id}button`}
@@ -170,6 +196,10 @@ class DropdownMenu extends React.Component<Props> {
                 >
                   <Menu
                     ref={this.menuRef}
+                    onMouseMove={hover ? this.clearCloseTimeout : undefined}
+                    onMouseOut={
+                      hover ? this.closeAfterTimeout(closePortal) : undefined
+                    }
                     onClick={
                       typeof children === 'function'
                         ? undefined
@@ -216,6 +246,7 @@ const Position = styled.div`
   z-index: 1000;
   transform: ${props =>
     props.position === 'center' ? 'translateX(-50%)' : 'initial'};
+  pointer-events: none;
 `;
 
 const Menu = styled.div`
@@ -228,6 +259,7 @@ const Menu = styled.div`
   overflow: hidden;
   overflow-y: auto;
   box-shadow: ${props => props.theme.menuShadow};
+  pointer-events: all;
 
   @media print {
     display: none;

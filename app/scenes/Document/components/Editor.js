@@ -1,25 +1,23 @@
 // @flow
 import * as React from 'react';
 import styled from 'styled-components';
-import { inject, observer } from 'mobx-react';
+import Textarea from 'react-autosize-textarea';
+import { observer } from 'mobx-react';
 import Editor from 'components/Editor';
-import PublishingInfo from 'components/PublishingInfo';
 import ClickablePadding from 'components/ClickablePadding';
 import Flex from 'shared/components/Flex';
 import parseTitle from 'shared/utils/parseTitle';
-import ViewsStore from 'stores/ViewsStore';
 import Document from 'models/Document';
-import plugins from './plugins';
+import DocumentMeta from './DocumentMeta';
 
-type Props = {|
+type Props = {
   onChangeTitle: (event: SyntheticInputEvent<>) => void,
   title: string,
   defaultValue: string,
   document: Document,
-  views: ViewsStore,
   isDraft: boolean,
   readOnly?: boolean,
-|};
+};
 
 @observer
 class DocumentEditor extends React.Component<Props> {
@@ -37,6 +35,14 @@ class DocumentEditor extends React.Component<Props> {
     }
   };
 
+  getHeadings = () => {
+    if (this.editor) {
+      return this.editor.getHeadings();
+    }
+
+    return [];
+  };
+
   handleTitleKeyDown = (event: SyntheticKeyboardEvent<>) => {
     if (event.key === 'Enter' || event.key === 'Tab') {
       event.preventDefault();
@@ -45,15 +51,7 @@ class DocumentEditor extends React.Component<Props> {
   };
 
   render() {
-    const {
-      views,
-      document,
-      title,
-      onChangeTitle,
-      isDraft,
-      readOnly,
-    } = this.props;
-    const totalViews = views.countForDocument(document.id);
+    const { document, title, onChangeTitle, isDraft, readOnly } = this.props;
     const { emoji } = parseTitle(title);
     const startsWithEmojiAndSpace = !!(
       emoji && title.match(new RegExp(`^${emoji}\\s`))
@@ -67,23 +65,16 @@ class DocumentEditor extends React.Component<Props> {
           onKeyDown={this.handleTitleKeyDown}
           placeholder="Start with a title…"
           value={!title && readOnly ? 'Untitled' : title}
-          offsetLeft={startsWithEmojiAndSpace}
+          style={startsWithEmojiAndSpace ? { marginLeft: '-1.2em' } : undefined}
           readOnly={readOnly}
           autoFocus={!title}
+          maxLength={100}
         />
-        <Meta document={document}>
-          {totalViews && !isDraft ? (
-            <React.Fragment>
-              &nbsp;&middot; Viewed{' '}
-              {totalViews === 1 ? 'once' : `${totalViews} times`}
-            </React.Fragment>
-          ) : null}
-        </Meta>
+        <DocumentMeta isDraft={isDraft} document={document} />
         <Editor
           ref={ref => (this.editor = ref)}
           autoFocus={title && !this.props.defaultValue}
           placeholder="…the rest is up to you"
-          plugins={plugins}
           grow
           {...this.props}
         />
@@ -93,27 +84,25 @@ class DocumentEditor extends React.Component<Props> {
   }
 }
 
-const Meta = styled(PublishingInfo)`
-  margin: -12px 0 2em 0;
-  font-size: 14px;
-`;
-
-const Title = styled('input')`
+const Title = styled(Textarea)`
   z-index: 1;
   line-height: 1.25;
   margin-top: 1em;
   margin-bottom: 0.5em;
-  margin-left: ${props => (props.offsetLeft ? '-1.2em' : 0)};
+  text: ${props => props.theme.text};
+  background: ${props => props.theme.background};
+  transition: ${props => props.theme.backgroundTransition};
   color: ${props => props.theme.text};
   font-size: 2.25em;
   font-weight: 500;
   outline: none;
   border: 0;
   padding: 0;
+  resize: none;
 
   &::placeholder {
     color: ${props => props.theme.placeholder};
   }
 `;
 
-export default inject('views')(DocumentEditor);
+export default DocumentEditor;

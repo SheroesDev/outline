@@ -110,6 +110,7 @@ class DocumentHistory extends React.Component<Props> {
                   revision={revision}
                   document={document}
                   showMenu={index !== 0}
+                  selected={this.props.match.params.revisionId === revision.id}
                 />
               ))}
             </ArrowKeyNavigation>
@@ -133,7 +134,8 @@ const Wrapper = styled(Flex)`
   right: 0;
   z-index: 1;
   min-width: ${props => props.theme.sidebarWidth};
-  overflow: scroll;
+  height: 100%;
+  overflow-y: auto;
   overscroll-behavior: none;
 `;
 
@@ -141,8 +143,6 @@ const Sidebar = styled(Flex)`
   background: ${props => props.theme.background};
   min-width: ${props => props.theme.sidebarWidth};
   border-left: 1px solid ${props => props.theme.divider};
-  overflow: scroll;
-  overscroll-behavior: none;
   z-index: 1;
 `;
 

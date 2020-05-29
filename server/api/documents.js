@@ -299,6 +299,10 @@ router.post('documents.starred', auth(), pagination(), async ctx => {
         },
         include: [
           {
+            model: Collection,
+            as: 'collection',
+          },
+          {
             model: Star,
             as: 'starred',
             where: {
@@ -692,12 +696,13 @@ router.post('documents.create', auth(), async ctx => {
   const {
     title = '',
     text = '',
-    editorVersion,
     publish,
     collectionId,
     parentDocumentId,
     index,
   } = ctx.body;
+  const editorVersion = ctx.headers['x-editor-version'];
+
   ctx.assertUuid(collectionId, 'collectionId must be an uuid');
   if (parentDocumentId) {
     ctx.assertUuid(parentDocumentId, 'parentDocumentId must be an uuid');
@@ -787,10 +792,11 @@ router.post('documents.update', auth(), async ctx => {
     publish,
     autosave,
     done,
-    editorVersion,
     lastRevision,
     append,
   } = ctx.body;
+  const editorVersion = ctx.headers['x-editor-version'];
+
   ctx.assertPresent(id, 'id is required');
   ctx.assertPresent(title || text, 'title or text is required');
   if (append) ctx.assertPresent(text, 'Text is required while appending');
@@ -809,7 +815,7 @@ router.post('documents.update', auth(), async ctx => {
 
   if (append) {
     document.text += text;
-  } else if (text) {
+  } else if (text !== undefined) {
     document.text = text;
   }
   document.lastModifiedById = user.id;
@@ -885,9 +891,9 @@ router.post('documents.move', auth(), async ctx => {
 
   const user = ctx.state.user;
   const document = await Document.findByPk(id, { userId: user.id });
-  const { collection } = document;
   authorize(user, 'move', document);
 
+  const { collection } = document;
   if (collection.type !== 'atlas' && parentDocumentId) {
     throw new InvalidRequestError(
       'Document cannot be nested in this collection type'

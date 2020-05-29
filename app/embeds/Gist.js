@@ -5,9 +5,12 @@ const URL_REGEX = new RegExp(
   '^https://gist.github.com/([a-zd](?:[a-zd]|-(?=[a-zd])){0,38})/(.*)$'
 );
 
-type Props = {
-  url: string,
-};
+type Props = {|
+  attrs: {|
+    href: string,
+    matches: string[],
+  |},
+|};
 
 class Gist extends React.Component<Props> {
   iframeNode: ?HTMLIFrameElement;
@@ -19,7 +22,7 @@ class Gist extends React.Component<Props> {
   }
 
   get id() {
-    const gistUrl = new URL(this.props.url);
+    const gistUrl = new URL(this.props.attrs.href);
     return gistUrl.pathname.split('/')[2];
   }
 
@@ -28,10 +31,21 @@ class Gist extends React.Component<Props> {
     const iframe = this.iframeNode;
     if (!iframe) return;
 
+    // We need to add some temporary content to the iframe for the document
+    // to be available, otherwise it's undefined on first load
+    const temp = document.getElementById('gist');
+    if (temp) {
+      temp.innerHTML = '';
+      temp.appendChild(iframe);
+    }
+
     // $FlowFixMe
     let doc = iframe.document;
-    if (iframe.contentDocument) doc = iframe.contentDocument;
-    else if (iframe.contentWindow) doc = iframe.contentWindow.document;
+    if (iframe.contentDocument) {
+      doc = iframe.contentDocument;
+    } else if (iframe.contentWindow) {
+      doc = iframe.contentWindow.document;
+    }
 
     const gistLink = `https://gist.github.com/${id}.js`;
     const gistScript = `<script type="text/javascript" src="${

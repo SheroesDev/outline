@@ -10,7 +10,6 @@
 </p>
 <p align="center">
   <a href="https://circleci.com/gh/outline/outline" rel="nofollow"><img src="https://circleci.com/gh/outline/outline.svg?style=shield&amp;circle-token=c0c4c2f39990e277385d5c1ae96169c409eb887a"></a>
-  <a href="https://spectrum.chat/outline" rel="nofollow"><img src="https://withspectrum.github.io/badge/badge.svg" alt="Join the community on Spectrum"/></a>
   <a href="https://github.com/prettier/prettier"><img src="https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat"></a>
   <a href="https://github.com/styled-components/styled-components"><img src="https://img.shields.io/badge/style-%F0%9F%92%85%20styled--components-orange.svg"></a>
 </p>
@@ -34,8 +33,11 @@ Outline requires the following dependencies:
 
 In development you can quickly get an environment running using Docker by following these steps:
 
+1. Install these dependencies if you don't already have them
+  1. [Docker for Desktop](https://www.docker.com)
+  1. [Node.js](https://nodejs.org/) (v12 LTS preferred)
+  1. [Yarn](https://yarnpkg.com)
 1. Clone this repo
-1. Install [Docker for Desktop](https://www.docker.com) if you don't already have it
 1. Register a Slack app at https://api.slack.com/apps
 1. Copy the file `.env.sample` to `.env`
 1. Fill out the following fields:
@@ -54,7 +56,7 @@ For a self-hosted production installation there is more flexibility, but these a
 
 1. Clone this repo and install dependencies with `yarn` or `npm install`
 
-   > Requires [Node.js, npm](https://nodejs.org/) and [yarn](https://yarnpkg.com) installed
+   > Requires [Node.js](https://nodejs.org/) and [yarn](https://yarnpkg.com) installed
 
 1. Build the web app with `yarn build:webpack` or `npm run build:webpack`
 1. Using the `.env.sample` as a reference, set the required variables in your production environment. The following are required as a minimum:
@@ -107,7 +109,7 @@ Outline is composed of separate backend and frontend application which are both 
 
 Outline's frontend is a React application compiled with [Webpack](https://webpack.js.org/). It uses [Mobx](https://mobx.js.org/) for state management and [Styled Components](https://www.styled-components.com/) for component styles. Unless global, state logic and styles are always co-located with React components together with their subcomponents to make the component tree easier to manage.
 
-The editor itself is built ontop of [Slate](https://github.com/ianstormtaylor/slate) and hosted in a separate repository to encourage reuse: [rich-markdown-editor](https://github.com/outline/rich-markdown-editor)
+The editor itself is built on [Prosemirror](https://github.com/prosemirror) and hosted in a separate repository to encourage reuse: [rich-markdown-editor](https://github.com/outline/rich-markdown-editor)
 
 - `app/` - Frontend React application
 - `app/scenes` - Full page views

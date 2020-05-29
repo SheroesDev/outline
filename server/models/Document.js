@@ -1,9 +1,7 @@
 // @flow
-import slug from 'slug';
 import { map, find, compact, uniq } from 'lodash';
-import randomstring from 'randomstring';
 import MarkdownSerializer from 'slate-md-serializer';
-import Plain from 'slate-plain-serializer';
+import randomstring from 'randomstring';
 import Sequelize, { type Transaction } from 'sequelize';
 import removeMarkdown from '@tommoor/remove-markdown';
 
@@ -12,26 +10,26 @@ import { Collection, User } from '../models';
 import { DataTypes, sequelize } from '../sequelize';
 import parseTitle from '../../shared/utils/parseTitle';
 import unescape from '../../shared/utils/unescape';
+import slugify from '../utils/slugify';
 import Revision from './Revision';
 
 const Op = Sequelize.Op;
-const Markdown = new MarkdownSerializer();
 const URL_REGEX = /^[0-9a-zA-Z-_~]*-([a-zA-Z0-9]{10,15})$/;
+const serializer = new MarkdownSerializer();
 
-export const DOCUMENT_VERSION = 1;
-
-slug.defaults.mode = 'rfc3986';
-const slugify = text =>
-  slug(text, {
-    remove: /[.]/g,
-  });
+export const DOCUMENT_VERSION = 2;
 
 const createRevision = (doc, options = {}) => {
   // we don't create revisions for autosaves
   if (options.autosave) return;
 
   // we don't create revisions if identical to previous
-  if (doc.text === doc.previous('text')) return;
+  if (
+    doc.text === doc.previous('text') &&
+    doc.title === doc.previous('title')
+  ) {
+    return;
+  }
 
   return Revision.create(
     {
@@ -53,7 +51,9 @@ const createUrlId = doc => {
 };
 
 const beforeCreate = async doc => {
-  doc.version = DOCUMENT_VERSION;
+  if (doc.version === undefined) {
+    doc.version = DOCUMENT_VERSION;
+  }
   return beforeSave(doc);
 };
 
@@ -100,6 +100,11 @@ const Document = sequelize.define(
     version: DataTypes.SMALLINT,
     editorVersion: DataTypes.STRING,
     text: DataTypes.TEXT,
+
+    // backup contains a record of text at the moment it was converted to v2
+    // this is a safety measure during deployment of new editor and will be
+    // dropped in a future update
+    backup: DataTypes.TEXT,
     isWelcome: { type: DataTypes.BOOLEAN, defaultValue: false },
     revisionCount: { type: DataTypes.INTEGER, defaultValue: 0 },
     archivedAt: DataTypes.DATE,
@@ -259,6 +264,11 @@ Document.searchForTeam = async (
   const wildcardQuery = `${sequelize.escape(query)}:*`;
   const collectionIds = await team.collectionIds();
 
+  // If the team has access no public collections then shortcircuit the rest of this
+  if (!collectionIds.length) {
+    return [];
+  }
+
   // Build the SQL query to get documentIds, ranking, and search term context
   const sql = `
     SELECT
@@ -327,6 +337,11 @@ Document.searchForUser = async (
     collectionIds = [options.collectionId];
   } else {
     collectionIds = await user.collectionIds();
+  }
+
+  // If the user has access to no collections then shortcircuit the rest of this
+  if (!collectionIds.length) {
+    return [];
   }
 
   let dateFilter;
@@ -444,11 +459,26 @@ Document.prototype.toMarkdown = function() {
 };
 
 Document.prototype.migrateVersion = function() {
-  // migrate from document version 0 -> 1 means removing the title from the
-  // document text attribute.
+  let migrated = false;
+
+  // migrate from document version 0 -> 1
   if (!this.version) {
+    // removing the title from the document text attribute
     this.text = this.text.replace(/^#\s(.*)\n/, '');
     this.version = 1;
+    migrated = true;
+  }
+
+  // migrate from document version 1 -> 2
+  if (this.version === 1) {
+    const nodes = serializer.deserialize(this.text);
+    this.backup = this.text;
+    this.text = serializer.serialize(nodes, { version: 2 });
+    this.version = 2;
+    migrated = true;
+  }
+
+  if (migrated) {
     return this.save({ silent: true, hooks: false });
   }
 };
@@ -579,10 +609,17 @@ Document.prototype.getTimestamp = function() {
 };
 
 Document.prototype.getSummary = function() {
-  const value = Markdown.deserialize(this.text);
-  const plain = Plain.serialize(value);
+  const plain = removeMarkdown(unescape(this.text), {
+    stripHTML: false,
+  });
   const lines = compact(plain.split('\n'));
-  return lines.length >= 1 ? lines[1] : '';
+  const notEmpty = lines.length >= 1;
+
+  if (this.version) {
+    return notEmpty ? lines[0] : '';
+  }
+
+  return notEmpty ? lines[1] : '';
 };
 
 Document.prototype.toJSON = function() {
